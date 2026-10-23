@@ -158,10 +158,12 @@
       document.documentElement.classList.remove('locked');
       window.scrollTo(0, 0);
       document.dispatchEvent(new CustomEvent('invite:open', { detail: invite }));
+      startSite();
     };
 
     if (reduced) {
       site.hidden = false;
+      prepHero();
       gsap.fromTo(site, { opacity: 0 }, { opacity: 1, duration: .4, onComplete: finish });
       gsap.to(gate, { opacity: 0, duration: .4 });
       return;
@@ -187,7 +189,8 @@
       .to(card, { y: () => -card.offsetHeight * .72, duration: 1.3, ease: 'power3.inOut' }, 'rise')
 
       .addLabel('drop', '-=.2')
-      .to(['.env-liner', '#pocket', '#flapWrap'], { y: () => innerHeight, duration: 1.2, ease: 'power3.in' }, 'drop')
+      .to(['.env-liner', '#pocket', '#flapWrap'], { y: () => innerHeight * 1.5, duration: 1.2, ease: 'power3.in' }, 'drop')
+      .to(['.env-liner', '#pocket', '#flapWrap'], { opacity: 0, duration: .5, ease: 'power1.in' }, 'drop+=.7')
       .to(card, {
         x: () => cardTarget().x,
         y: () => cardTarget().y,
@@ -196,7 +199,7 @@
         ease: 'expo.inOut',
       }, 'drop+=.35')
       .to('#cardTint', { opacity: 0, duration: .9, ease: 'power2.inOut' }, '<.5')
-      .call(() => { site.hidden = false; gsap.set(site, { opacity: 0 }); })
+      .call(() => { site.hidden = false; gsap.set(site, { opacity: 0 }); prepHero(); })
       .to(site, { opacity: 1, duration: .5, ease: 'power1.out' })
       .call(finish);
   }
@@ -217,4 +220,72 @@
     };
     return target;
   }
+
+  /* ---------- Hero: the words write themselves on, the photo surfaces beneath. ---------- */
+
+  const WRITE_FROM = 'inset(-30% 102% -40% -12%)', WRITE_TO = 'inset(-30% -12% -40% -12%)';
+  let heroTl = null;
+
+  function prepHero() {
+    if (reduced) return;
+    gsap.set('#hero .were, #hero .eng', { clipPath: WRITE_FROM });
+    gsap.set(['#heroPhoto', '#hero .see', '#scrollCue'], { opacity: 0 });
+    gsap.set('#heroPhoto', { scale: 1.06, transformOrigin: '50% 100%' });
+    heroTl = gsap.timeline({ paused: true, defaults: { ease: 'power2.inOut' } })
+      .to('#hero .were', { clipPath: WRITE_TO, duration: 1.3 }, 0)
+      .to('#hero .eng', { clipPath: WRITE_TO, duration: 1.7 }, .95)
+      .to('#heroPhoto', { opacity: .5, scale: 1, duration: 2.6, ease: 'power3.out' }, .6)
+      .to('#hero .see', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 2.4)
+      .to('#scrollCue', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 3.1);
+  }
+
+  /* ---------- Scrolling: Lenis drives ScrollTrigger; each detail arrives once. ---------- */
+
+  function startSite() {
+    if (reduced) return;
+    heroTl && heroTl.play();
+    gsap.registerPlugin(ScrollTrigger);
+    const lenis = new Lenis({ lerp: .085 });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add(t => lenis.raf(t * 1000));
+    gsap.ticker.lagSmoothing(0);
+
+    // Photo sinks and fades as the hero scrolls away.
+    gsap.to('#heroPhotoWrap', { yPercent: 12, opacity: .4, ease: 'none', scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } });
+    gsap.to('#scrollCue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: '#hero', start: 'top top', end: '15% top', scrub: true } });
+
+    // The couple's names write on like the hero; the rest rises in.
+    gsap.fromTo('#details .names span', { clipPath: WRITE_FROM }, {
+      clipPath: WRITE_TO, duration: 1.4, stagger: .45, ease: 'power2.inOut',
+      scrollTrigger: { trigger: '#details .names', start: 'top 80%', once: true },
+    });
+    gsap.utils.toArray('#details [data-reveal]:not(.names)').forEach(el => {
+      gsap.from(el.children, {
+        y: 26, opacity: 0, duration: 1.1, stagger: .08, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 86%', once: true },
+      });
+    });
+  }
+
+  /* ---------- Add to calendar (.ics) ---------- */
+
+  $('calBtn').addEventListener('click', () => {
+    const ics = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Marchilino and Salwa//Engagement//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      'UID:engagement-20270123@marchilino-salwa',
+      'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),
+      'DTSTART:20270123T080000Z', 'DTEND:20270123T130000Z',
+      'SUMMARY:Marchilino & Salwa engagement',
+      'LOCATION:La Riviera Restaurant & Bar\\, 170 Phillip St\\, Sydney NSW 2000',
+      'DESCRIPTION:Dress code: chic cocktail. 50m from Martin Place Station.',
+      'END:VEVENT', 'END:VCALENDAR',
+    ].join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+    a.download = 'marchilino-salwa-engagement.ics';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  });
 })();
