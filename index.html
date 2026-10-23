@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en-AU" class="locked">
+<head>
+<meta charset="utf-8">
+<title>Marchilino &amp; Salwa</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7a0b10">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="You are invited to celebrate the engagement of Marchilino and Salwa. Saturday 23 January 2027, 7pm, La Riviera, Sydney.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Inter+Tight:wght@500&display=swap">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="paper-grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<section class="screen locked-screen" id="locked" hidden>
+  <p class="script" aria-label="Marchilino and Salwa">M &amp; S</p>
+  <p class="caps">This invitation is private. Please open the personal link you were sent.</p>
+</section>
+
+<section class="screen gate" id="gate" hidden aria-label="Your invitation">
+  <div class="envelope" id="envelope">
+    <div class="env-liner"></div>
+    <div class="card" id="card" aria-hidden="true">
+      <div class="card-tint" id="cardTint"></div>
+      <div class="face" data-face></div>
+    </div>
+    <div class="pocket" id="pocket"><div class="fold l"></div><div class="fold r"></div></div>
+    <div class="flap-shadow" id="flapShadow"></div>
+    <div class="flap-wrap" id="flapWrap"><div class="flap" id="flap"><div class="flap-face"></div><div class="flap-inside"></div></div></div>
+    <div class="seal" id="seal" aria-hidden="true"><span class="half whole"></span><span class="half l"></span><span class="half r"></span></div>
+  </div>
+
+  <form class="code-form" id="codeForm" autocomplete="off" novalidate>
+    <label class="caps" for="code">Enter your access code</label>
+    <div class="code-row">
+      <input class="code-input" id="code" name="code" type="text" inputmode="text" autocapitalize="characters" spellcheck="false" enterkeyhint="go" required>
+      <button class="open-btn" id="openBtn" type="submit">Open</button>
+    </div>
+    <p class="caps try-again" id="tryAgain" aria-live="polite"></p>
+  </form>
+</section>
+
+<main class="site" id="site" hidden>
+  <section class="hero" id="hero" aria-label="We're engaged">
+    <div class="hero-frame"><div class="face" data-face></div></div>
+  </section>
+</main>
+
+<noscript><div class="screen"><p class="caps">Please turn on JavaScript to open your invitation.</p></div></noscript>
+
+<script>window.INVITE_API = "";</script>
+<script src="vendor/gsap.min.js"></script>
+<script src="site.js"></script>
+</body>
+</html>
