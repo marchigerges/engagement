@@ -190,7 +190,23 @@ function slugify(s) {
 }
 
 /** Adds a Responses row (with a readable slug) for every invite that lacks one. Safe to re-run; never overwrites a slug. */
+/** Gives every invite row that has a name but no Code a random one, so codes never need typing. */
+function assignCodes() {
+  const inv = sheet('Invites');
+  const values = inv.getDataRange().getValues();
+  const h = headerIndex(values[0]);
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  for (let r = 1; r < values.length; r++) {
+    const hasName = String(values[r][h['Guest 1']] || '').trim();
+    if (!hasName || String(values[r][h['Code']] || '').trim()) continue;
+    let code = '';
+    for (let i = 0; i < 10; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    inv.getRange(r + 1, h['Code'] + 1).setValue(code);
+  }
+}
+
 function addMissingSlugs() {
+  assignCodes();
   const s = responsesSheet();
   const responses = readResponses();
   const taken = {};

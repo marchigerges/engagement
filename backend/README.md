@@ -1,5 +1,7 @@
 # Invite backend (Google Apps Script)
 
+Invites rows need only names: a row with Guest 1 filled and no Code gets a random Code automatically.
+
 Bound to the **Engagement Party Guest List** Sheet. `Code.gs` is the whole backend.
 
 ## Deploy (once, about 5 minutes)

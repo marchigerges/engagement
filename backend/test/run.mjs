@@ -39,6 +39,7 @@ add('Invites', [
   ['E9mqXIKdiW', 'Salwa', 'Salwa Family', 'Joseph El Chami', 'Noura El Chami'],
   ['qje1H2qBb4', 'Salwa', 'Extended Family', 'Abou Anis', "Abou Anis's wife"],
   ['h3wetsfTbX', 'Salwa', 'Jessica Jebbo Family', 'Jessica Jebbo'],
+  ['', 'Marchi', 'Friends', 'Noah Nocode'],
 ]);
 add('Guest List', [
   ['Salwa Side', '', '', '', '', '', 'Marchi Side'],
@@ -77,6 +78,11 @@ assert.equal(jordan, 'jordan-and-sam');
 assert.equal(slugOf('E9mqXIKdiW'), 'joseph-and-noura');
 assert.equal(slugOf('qje1H2qBb4'), 'abou-and-abou');
 assert.equal(new Set(responses.slice(1).map(r => r[1])).size, responses.length - 1, 'slugs are unique');
+
+// A row with names but no code gets one
+const autoCode = sheets.Invites.data.find(x => x[3] === 'Noah Nocode')[0];
+log('auto code', autoCode); assert.match(autoCode, /^[A-Za-z0-9]{10}$/);
+assert.equal(responses.find(r => r[0] === autoCode)[1], 'noah-nocode');
 
 // Personal links and the chase-up tab
 const invRowOf = c => sheets.Invites.data.find(x => x[0] === c);
