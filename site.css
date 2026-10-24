@@ -129,7 +129,7 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 .ch-three .chapter-text { margin-top: clamp(28px, 5svh, 48px); }
 
 /* ---------- The evening ---------- */
-.evening { padding: clamp(140px, 22svh, 240px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(52px, 8svh, 84px); text-align: center; }
+.evening { padding: clamp(88px, 14svh, 150px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(52px, 8svh, 84px); text-align: center; }
 .evening h2 { font-size: clamp(3.4rem, 15vw, 6.5rem); }
 .when { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .when .script { font-size: clamp(3rem, 13.5vw, 6.4rem); white-space: nowrap; }
@@ -142,17 +142,15 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
   transition: color .4s var(--ease-out);
 }
 .text-link:hover { color: var(--ink-dim); }
-.facts { margin: 0; display: grid; gap: 34px; }
+.facts { margin: 0; display: grid; gap: 34px; justify-items: center; }
 .facts div { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .facts dd { margin: 0; }
-@media (min-width: 760px) { .facts { grid-template-columns: auto auto; gap: 96px; } }
+
 
 /* ---------- Countdown ---------- */
-.countdown { padding: clamp(140px, 22svh, 240px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-.countdown .num { font-size: clamp(9rem, 48vw, 20rem); line-height: .8; font-variant-numeric: tabular-nums; }
 
 /* ---------- RSVP ---------- */
-.rsvp { padding: clamp(120px, 20svh, 220px) var(--gutter) 0; display: flex; justify-content: center; }
+.rsvp { padding: clamp(88px, 14svh, 150px) var(--gutter) 0; display: flex; justify-content: center; }
 .reply-card { position: relative; width: min(100%, 520px); background: var(--red-lift); padding: clamp(36px, 8vw, 56px) clamp(22px, 6vw, 48px); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 26px; }
 .reply-card h2 { font-size: clamp(3.2rem, 14vw, 4.8rem); }
 #rsvpForm, .rsvp-fields { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 28px; }
@@ -212,7 +210,7 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 .reply-float.show { transform: none; opacity: 1; }
 
 /* ---------- FAQ ---------- */
-.faq { padding: clamp(120px, 20svh, 220px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(36px, 6svh, 56px); text-align: center; }
+.faq { padding: clamp(88px, 14svh, 150px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(36px, 6svh, 56px); text-align: center; }
 .faq h2 { font-size: clamp(3.2rem, 14vw, 5.5rem); }
 .faq-list { width: min(100%, 560px); text-align: left; }
 .faq details { border-bottom: 1px solid var(--ink-faint); }
@@ -231,7 +229,7 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 .faq details p { margin: 0; padding: 0 2px 22px; font-size: 1.02rem; line-height: 1.6; color: var(--ink); max-width: 46ch; }
 
 /* ---------- Close ---------- */
-.close { padding: clamp(140px, 22svh, 240px) var(--gutter) max(72px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.close { padding: clamp(88px, 14svh, 150px) var(--gutter) max(72px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
 .close .script { font-size: clamp(3rem, 13vw, 5.5rem); }
 
 /* ---------- Without motion: everything simply sits on the page ---------- */

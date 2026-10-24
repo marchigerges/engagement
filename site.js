@@ -83,7 +83,7 @@
   if (daysLeft <= 0) $('countdown').hidden = true;
   else {
     $('days').textContent = daysLeft;
-    $('daysLabel').textContent = daysLeft === 1 ? 'Day to go' : 'Days to go';
+    $('daysLabel').textContent = daysLeft === 1 ? 'day to go' : 'days to go';
   }
 
   /* ---------- Add to calendar (.ics) ---------- */
@@ -312,12 +312,12 @@
   if (daysLeft > 0) {
     const n = { v: 0 };
     gsap.to(n, {
-      v: daysLeft, duration: 2.2, ease: 'power3.out',
+      v: daysLeft, duration: 1.8, ease: 'power3.out',
       onUpdate: () => { $('days').textContent = Math.round(n.v); },
-      scrollTrigger: { trigger: '#countdown', start: 'top 75%', once: true },
+      scrollTrigger: { trigger: '#evening .when', start: 'top 85%', once: true },
     });
-    gsap.from('#days', { autoAlpha: 0, scale: .92, duration: 1.6, ease: 'power3.out', scrollTrigger: { trigger: '#countdown', start: 'top 75%', once: true } });
   }
+
 
   document.fonts && document.fonts.ready.then(() => ScrollTrigger.refresh());
 })();
