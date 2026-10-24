@@ -225,57 +225,62 @@
   const HIDE = 'inset(-40% 102% -60% -12%)', SHOW = 'inset(-40% -12% -60% -12%)';
   const write = (el, vars) => gsap.fromTo(el, { clipPath: HIDE }, { clipPath: SHOW, ease: 'power2.inOut', ...vars });
 
-  // Opening: one line per screen while the photograph warms in behind.
-  gsap.set(['#shotTitle', '#shotNames'], { autoAlpha: 1 });
+  // Opening: plays by itself on arrival, so the first screen says everything without any scrolling.
   gsap.set(['#shotTitle .write', '#shotNames .write'], { clipPath: HIDE });
-  gsap.set('#shotNames .caps', { autoAlpha: 0, y: 16 });
-  gsap.timeline({
-    defaults: { ease: 'none' },
-    scrollTrigger: { trigger: '#opening', start: 'top top', end: '+=260%', pin: true, scrub: .6, anticipatePin: 1 },
-  })
-    .to('#cue', { autoAlpha: 0, duration: .3 }, 0)
-    .to('#shotGreet', { autoAlpha: 0, y: -24, duration: .8 }, 0)
-    .to('#stagePhoto', { opacity: .45, scale: 1.12, duration: 1.6 }, 0)
-    .to('#shotTitle .were', { clipPath: SHOW, duration: 1.2, ease: 'power1.inOut' }, .7)
-    .to('#shotTitle .eng', { clipPath: SHOW, duration: 1.4, ease: 'power1.inOut' }, 1.8)
-    .to({}, { duration: .8 })
-    .addLabel('lift')
-    .to('#shotTitle', { autoAlpha: 0, yPercent: -18, duration: 1 }, 'lift')
-    .to('#stagePhoto', { opacity: 1, scale: 1, duration: 2.2 }, 'lift')
-    .to('#stageTone', { opacity: 0, duration: 2.2 }, 'lift')
-    .to('#shotNames .write', { clipPath: SHOW, duration: 1.4, ease: 'power1.inOut' }, 'lift+=.7')
-    .to('#shotNames .caps', { autoAlpha: 1, y: 0, duration: .8 }, '>-.2')
-    .to({}, { duration: 1 });
+  gsap.set(['#shotNames .caps', '#cue'], { autoAlpha: 0, y: 14 });
+  gsap.timeline({ delay: .3, defaults: { ease: 'power2.inOut' } })
+    .to('#stagePhoto', { opacity: 1, scale: 1, duration: 3.2, ease: 'power2.out' }, 0)
+    .to('#stageTone', { opacity: 0, duration: 3.2, ease: 'power1.inOut' }, .4)
+    .to('#shotTitle .were', { clipPath: SHOW, duration: 1.2 }, .5)
+    .to('#shotTitle .eng', { clipPath: SHOW, duration: 1.4 }, 1.4)
+    .to('#shotNames .write', { clipPath: SHOW, duration: 1.2 }, 2.6)
+    .to('#shotNames .caps', { autoAlpha: 1, y: 0, duration: 1, stagger: .12, ease: 'power3.out' }, 3.3)
+    .to('#cue', { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out' }, 3.9);
 
-  // Light chapters: the paper (and a lighter vignette) fades in as the chapters arrive and out as they end.
-  if (document.documentElement.classList.contains('light-chapters')) {
-    // refreshPriority -1: measured after the pinned sections, whose extra scroll length moves these points.
-    const into = { trigger: '#chapters', start: 'top 80%', end: 'top 20%', scrub: true, refreshPriority: -1 };
-    const out = { trigger: '#chapters', start: 'bottom 35%', end: 'bottom top', scrub: true, refreshPriority: -1 };
-    gsap.fromTo('#paper', { opacity: 0 }, { opacity: 1, ease: 'none', scrollTrigger: into });
-    gsap.fromTo('#paper', { opacity: 1 }, { opacity: 0, ease: 'none', immediateRender: false, scrollTrigger: out });
-    gsap.fromTo('#vignette', { opacity: 1 }, { opacity: .25, ease: 'none', scrollTrigger: into });
-    gsap.fromTo('#vignette', { opacity: .25 }, { opacity: 1, ease: 'none', immediateRender: false, scrollTrigger: out });
+  /* ---------- The stack: each card holds while the next slides over it ---------- */
+
+  const cards = [$('opening'), ...document.querySelectorAll('#chapters .card')];
+
+  // A card taller than the screen holds once its bottom meets the bottom of the screen.
+  function setStick() {
+    cards.forEach(c => {
+      const extra = Math.max(0, c.offsetHeight - innerHeight);
+      c.style.setProperty('--stick', -extra + 'px');
+      c.style.setProperty('--origin', extra + innerHeight / 2 + 'px'); // sink towards the middle of what is on screen
+    });
+  }
+  setStick();
+  ScrollTrigger.addEventListener('refreshInit', setStick);
+
+  // Where a card sits in the page before it sticks: sticky elements report their stuck position,
+  // so measure from the stack's own start and the heights of the cards before it.
+  function flowTop(card) {
+    const chapters = $('chapters');
+    if (card === cards[0]) return $('opening').parentNode.getBoundingClientRect().top + scrollY;
+    let y = chapters.getBoundingClientRect().top + scrollY;
+    for (const c of chapters.children) {
+      y += parseFloat(getComputedStyle(c).marginTop) || 0;
+      if (c === card) break;
+      y += c.offsetHeight;
+    }
+    return y;
   }
 
-  // Chapter one: the photograph fills the screen, then settles into its frame as the words arrive.
-  gsap.timeline({
-    scrollTrigger: { trigger: '#chOne .pin', start: 'top top', end: '+=160%', pin: true, scrub: .6, invalidateOnRefresh: true },
-  })
-    .fromTo('#chOneFrame', { scale: () => chOneStart().s, y: () => chOneStart().y }, { scale: 1, y: 0, ease: 'power2.inOut', duration: 1 })
-    .fromTo('#chOneFrame .tone', { opacity: 1 }, { opacity: 0, duration: .8, ease: 'none' }, .2)
-    .fromTo('#chOneText > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, stagger: .15, duration: .5, ease: 'power2.out' }, .65);
+  // As the next card rises, the one beneath darkens and sinks back slightly.
+  cards.slice(0, -1).forEach((card, i) => {
+    const next = cards[i + 1];
+    const range = { start: () => flowTop(next) - innerHeight, end: () => flowTop(next), scrub: true, invalidateOnRefresh: true };
+    gsap.fromTo(card, { scale: 1 }, { scale: .93, ease: 'none', scrollTrigger: { trigger: next, ...range } });
+    gsap.fromTo(card.querySelector('.card-shade'), { opacity: 0 }, { opacity: .6, ease: 'none', scrollTrigger: { trigger: next, ...range } });
+  });
 
-  // Where the frame must start to fill the pinned screen: measured from layout, never from the
-  // transformed box, so a refresh mid-scroll can't compound the offset.
-  function chOneStart() {
-    const pin = document.querySelector('#chOne .pin'), f = $('chOneFrame'), t = $('chOneText');
-    const gap = parseFloat(getComputedStyle(pin).rowGap) || 0;
-    const top = (pin.offsetHeight - (f.offsetHeight + gap + t.offsetHeight)) / 2;
-    return {
-      s: Math.max(innerWidth / f.offsetWidth, innerHeight / f.offsetHeight) * 1.02,
-      y: innerHeight / 2 - (top + f.offsetHeight / 2),
-    };
+  // Chapter one: as its card slides up, the photograph settles into its frame and warms to colour.
+  {
+    const range = { trigger: '#chOne', start: () => flowTop($('chOne')) - innerHeight, end: () => flowTop($('chOne')), scrub: true, invalidateOnRefresh: true };
+    gsap.fromTo('#chOneFrame img', { scale: 1.25 }, { scale: 1, ease: 'none', scrollTrigger: range });
+    gsap.fromTo('#chOneFrame .tone', { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: range });
+    gsap.fromTo('#chOneText > *', { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1.1, stagger: .1, ease: 'power3.out',
+      scrollTrigger: { trigger: '#chOne', start: () => flowTop($('chOne')) - innerHeight * .35, once: true, invalidateOnRefresh: true } });
   }
 
   // Each photograph warms from oxblood to full colour as it reaches the middle of the screen.

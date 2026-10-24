@@ -38,20 +38,39 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .write { display: inline-block; padding: 0 .12em; }
 
 /* ---------- Chapters ---------- */
-/* Optional look: the chapters on warm white paper. Add class "light-chapters" to <html>.
-   A fixed sheet of paper fades in over the red as the chapters arrive and out as they end. */
-.paper { position: fixed; inset: 0; z-index: 0; background: var(--paper, #faf6f0); opacity: 0; pointer-events: none; }
-html.light-chapters .chapters { --ink: #6a0000; --ink-dim: rgba(106, 0, 0, .78); --ink-faint: rgba(106, 0, 0, .28); color: var(--ink); }
-html.light-chapters.still .chapters { background: var(--paper, #faf6f0); }
+/* The opening and the chapters are a stack of cards: each one holds still while the next slides up over it.
+   A card taller than the screen holds once its bottom reaches the bottom of the screen (--stick, set in site.js). */
+.stack { position: relative; }
+.opening { position: sticky; top: 0; z-index: 0; }
+.chapters { position: relative; z-index: 1; }
+.card, .chapter.card {
+  position: sticky; top: var(--stick, 0px);
+  min-height: 100svh; background: var(--card-bg, var(--red));
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -22px 44px -16px rgba(25, 0, 0, .6);
+  transform-origin: 50% var(--origin, 50%);
+}
+/* A pause between cards: each one sits fully on screen for a moment before the next slides over it. */
+.chapters > .card + .card { margin-top: 45svh; }
+html.still .chapters > .card + .card { margin-top: 0; }
+.card-shade { position: absolute; inset: 0; z-index: 6; background: #160000; opacity: 0; pointer-events: none; border-radius: inherit; }
+
+/* Optional look: the chapter cards on warm white paper. Add class "light-chapters" to <html>. */
+html.light-chapters .chapters { --card-bg: #faf6f0; --ink: #6a0000; --ink-dim: rgba(106, 0, 0, .78); --ink-faint: rgba(106, 0, 0, .28); color: var(--ink); }
+html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); }
 
 /* ---------- Locked ---------- */
 .locked { position: fixed; inset: 0; z-index: 40; background: var(--red); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 24px var(--gutter); text-align: center; }
 .locked .script { font-size: clamp(3.6rem, 16vw, 6rem); }
 .locked .caps { color: var(--ink-dim); max-width: 30ch; }
 
-/* ---------- Opening: pinned, one line per screen ---------- */
-.opening { position: relative; height: 100svh; overflow: hidden; }
-.stage { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+/* ---------- Opening: one screen that plays itself ---------- */
+.opening { height: 100svh; overflow: hidden; }
+.stage {
+  position: absolute; inset: 0; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(28px, 6svh, 56px);
+  padding: max(28px, env(safe-area-inset-top)) 0 clamp(84px, 14svh, 120px);
+}
 .stage-photo { position: absolute; inset: 0; opacity: .18; transform: scale(1.2); will-change: transform, opacity; }
 .stage-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
 /* A shade over the photograph so white type always reads, deepest where the words sit. */
@@ -62,11 +81,11 @@ html.light-chapters.still .chapters { background: var(--paper, #faf6f0); }
 .tone { position: absolute; inset: 0; pointer-events: none; background: var(--red); mix-blend-mode: color; }
 .tone::after { content: ""; position: absolute; inset: 0; background: var(--red); mix-blend-mode: multiply; opacity: .45; }
 .sheen { position: absolute; inset: -20% -30% auto auto; width: 90%; height: 120%; pointer-events: none; background: linear-gradient(118deg, transparent 38%, rgba(255, 255, 255, .05) 50%, transparent 62%); }
-.shot { position: absolute; left: var(--gutter); right: var(--gutter); display: flex; flex-direction: column; align-items: center; gap: 18px; will-change: transform, opacity; }
+.shot { position: relative; padding: 0 var(--gutter); display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 0; will-change: transform, opacity; }
 .shot.greet { gap: 14px; }
-.title .were { font-size: clamp(3.6rem, 17vw, 8.5rem); white-space: nowrap; }
-.title .eng { font-size: clamp(4.4rem, 21vw, 10.5rem); transform: translateX(-.15em); margin-top: .06em; }
-.shot.names .script { font-size: clamp(3.4rem, 15.5vw, 8rem); white-space: nowrap; }
+.title .were { font-size: clamp(3.4rem, min(16vw, 9svh), 8rem); white-space: nowrap; }
+.title .eng { font-size: clamp(4rem, min(20vw, 11svh), 10rem); transform: translateX(-.15em); margin-top: .06em; }
+.shot.names .script { font-size: clamp(2.6rem, min(12vw, 7svh), 6rem); white-space: nowrap; }
 .shot.names .caps { max-width: 28ch; }
 .cue { position: absolute; left: 0; right: 0; bottom: max(28px, env(safe-area-inset-bottom)); text-align: center; color: var(--ink-dim); }
 .cue::after { content: ""; display: block; width: 1px; height: 34px; margin: 12px auto 0; background: var(--ink-faint); transform-origin: 50% 0; animation: cue 2.4s var(--ease-out) infinite; }
@@ -80,14 +99,14 @@ html.light-chapters.still .chapters { background: var(--paper, #faf6f0); }
 .frame { position: relative; overflow: hidden; background: var(--red-deep); margin: 0; }
 .frame img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Chapter one: the photograph fills the screen, then settles into its frame. */
-.ch-one .pin { height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4svh, 40px); }
-.ch-one .frame { width: min(64vw, 360px, 44svh); aspect-ratio: 4 / 5; will-change: transform; }
+/* Chapter one: one screen, the photograph settling into its frame as the card arrives. */
+.ch-one .pin { min-height: 100svh; padding: clamp(32px, 6svh, 72px) 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4svh, 40px); }
+.ch-one .frame { width: min(50vw, 320px, 30svh); aspect-ratio: 4 / 5; will-change: transform; }
 .ch-one .frame img { object-position: 50% 48%; }
 
 /* Chapter two: the years as a loose scatter of photographs, mixed sizes on alternating sides,
    overlapping a little, each drifting at its own speed. */
-.ch-two { padding-top: clamp(120px, 20svh, 220px); display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.ch-two { padding-block: clamp(72px, 12svh, 120px); display: flex; flex-direction: column; align-items: center; gap: 22px; }
 .scatter { position: relative; width: min(100%, 720px); margin-top: clamp(40px, 7svh, 72px); display: flex; flex-direction: column; }
 .scatter .frame { aspect-ratio: 4 / 5; will-change: transform; }
 .scatter .frame + .frame { margin-top: -14%; }
@@ -106,7 +125,7 @@ html.light-chapters.still .chapters { background: var(--paper, #faf6f0); }
 .scatter .frame:nth-child(even) { z-index: 1; }
 
 /* Chapter three: words only. */
-.ch-three { padding-top: clamp(120px, 20svh, 220px); }
+.ch-three { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-block: 64px; }
 .ch-three .chapter-text { margin-top: clamp(28px, 5svh, 48px); }
 
 /* ---------- The evening ---------- */
@@ -183,14 +202,14 @@ html.light-chapters.still .chapters { background: var(--paper, #faf6f0); }
 
 /* A way to the reply card from anywhere in the film. */
 .reply-float {
-  position: fixed; z-index: 30; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
-  min-height: 48px; padding: 0 30px; display: inline-flex; align-items: center;
+  position: fixed; z-index: 30; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  min-height: 46px; padding: 0 22px; display: inline-flex; align-items: center;
   background: var(--ink); color: var(--red); text-decoration: none;
   font-weight: 500; font-size: .8rem; letter-spacing: var(--track); text-transform: uppercase;
   box-shadow: 0 12px 28px -10px rgba(20, 0, 0, .7);
-  transform: translate(-50%, 140%); opacity: 0; transition: transform .7s var(--ease-out), opacity .4s;
+  transform: translateY(140%); opacity: 0; transition: transform .7s var(--ease-out), opacity .4s;
 }
-.reply-float.show { transform: translate(-50%, 0); opacity: 1; }
+.reply-float.show { transform: none; opacity: 1; }
 
 /* ---------- FAQ ---------- */
 .faq { padding: clamp(120px, 20svh, 220px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(36px, 6svh, 56px); text-align: center; }
@@ -216,9 +235,7 @@ html.light-chapters.still .chapters { background: var(--paper, #faf6f0); }
 .close .script { font-size: clamp(3rem, 13vw, 5.5rem); }
 
 /* ---------- Without motion: everything simply sits on the page ---------- */
-html.still .opening { height: auto; overflow: visible; }
-html.still .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 64px; padding: 96px 0 120px; }
-html.still .shot { position: relative; left: auto; right: auto; padding: 0 var(--gutter); }
+html.still .opening, html.still .card { position: relative; top: auto; }
 html.still .stage-photo { opacity: .5; transform: none; }
 html.still .tone { opacity: 0; }
 html.still .cue { display: none; }
