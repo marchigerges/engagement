@@ -37,16 +37,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .body { margin: 0; font-size: 1.05rem; line-height: 1.6; max-width: 32ch; color: var(--ink); font-weight: 400; }
 .write { display: inline-block; padding: 0 .12em; }
 
-/* ---------- Chapters: photographs feathered into the page ---------- */
-/* Soft edges on every side, so each photograph melts into the ground instead of sitting on it like a sticker. */
-.chapters .frame {
-  background: transparent;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent), linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent), linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
-  mask-composite: intersect;
-}
-
+/* ---------- Chapters ---------- */
 /* Optional look: the chapters on warm white paper. Add class "light-chapters" to <html>.
    A fixed sheet of paper fades in over the red as the chapters arrive and out as they end. */
 .paper { position: fixed; inset: 0; z-index: 0; background: var(--paper, #faf6f0); opacity: 0; pointer-events: none; }
