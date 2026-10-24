@@ -44,7 +44,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ---------- Opening: pinned, one line per screen ---------- */
 .opening { position: relative; height: 100svh; overflow: hidden; }
 .stage { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
-.stage-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 52% 30%; opacity: .08; transform: scale(1.2); will-change: transform, opacity; }
+.stage-photo { position: absolute; inset: 0; opacity: .18; transform: scale(1.2); will-change: transform, opacity; }
+.stage-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+/* A shade over the photograph so white type always reads, deepest where the words sit. */
+.scrim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(90% 60% at 50% 45%, rgba(50, 0, 0, .55), rgba(50, 0, 0, .25) 70%, rgba(50, 0, 0, .5)); }
+
+/* Every photograph starts tinted to the card's oxblood and warms to full colour as it arrives.
+   The tint is a colour-blend layer, so the reveal is an opacity change only. */
+.tone { position: absolute; inset: 0; pointer-events: none; background: var(--red); mix-blend-mode: color; }
+.tone::after { content: ""; position: absolute; inset: 0; background: var(--red); mix-blend-mode: multiply; opacity: .45; }
 .sheen { position: absolute; inset: -20% -30% auto auto; width: 90%; height: 120%; pointer-events: none; background: linear-gradient(118deg, transparent 38%, rgba(255, 255, 255, .05) 50%, transparent 62%); }
 .shot { position: absolute; left: var(--gutter); right: var(--gutter); display: flex; flex-direction: column; align-items: center; gap: 18px; will-change: transform, opacity; }
 .shot.greet { gap: 14px; }
@@ -64,20 +72,27 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .frame { position: relative; overflow: hidden; background: var(--red-deep); margin: 0; }
 .frame img { width: 100%; height: 100%; object-fit: cover; }
 
+/* The reel: pinned while the strip of photographs slides across. */
+.reel { padding-top: clamp(120px, 20svh, 220px); }
+.reel-pin { height: 100svh; display: flex; flex-direction: column; justify-content: center; gap: clamp(28px, 5svh, 48px); overflow: hidden; text-align: center; }
+.reel-head { padding: 0 var(--gutter); }
+.reel-track { display: flex; gap: clamp(14px, 3vw, 28px); padding: 0 var(--gutter); width: max-content; will-change: transform; }
+.reel-track .frame { height: min(56svh, 520px); aspect-ratio: 3 / 4; flex: none; }
+
 /* Chapter one: the photograph fills the screen, then settles into its frame. */
 .ch-one .pin { height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4svh, 40px); }
 .ch-one .frame { width: min(64vw, 360px, 44svh); aspect-ratio: 4 / 5; will-change: transform; }
 
 /* Chapter two: two photographs drifting at different speeds. */
 .ch-two { padding-top: clamp(120px, 20svh, 220px); }
-.pair { position: relative; height: min(118vw, 680px); max-width: 640px; margin: clamp(40px, 7svh, 72px) auto; }
+.pair { position: relative; height: min(150vw, 820px); max-width: 680px; margin: clamp(40px, 7svh, 72px) auto; }
 .pair .frame { position: absolute; aspect-ratio: 4 / 5; will-change: transform; }
-.pair .a { left: 0; top: 0; width: 58%; }
-.pair .b { right: 0; bottom: 0; width: 50%; }
+.pair .a { left: 0; top: 0; width: 66%; }
+.pair .b { right: 0; bottom: 0; width: 56%; }
 
 /* Chapter three: the photograph opens from a slit to the full frame. */
 .ch-three { padding-top: clamp(120px, 20svh, 220px); }
-.ch-three .frame { width: min(100%, 560px); aspect-ratio: 4 / 5; margin: clamp(40px, 7svh, 72px) auto; will-change: clip-path; }
+.ch-three .frame { width: min(100%, 560px); aspect-ratio: 9 / 14; margin: clamp(40px, 7svh, 72px) auto; will-change: clip-path; }
 
 /* ---------- The evening ---------- */
 .evening { padding: clamp(140px, 22svh, 240px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(52px, 8svh, 84px); text-align: center; }
@@ -147,5 +162,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 html.still .opening { height: auto; overflow: visible; }
 html.still .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 64px; padding: 96px 0 120px; }
 html.still .shot { position: relative; left: auto; right: auto; padding: 0 var(--gutter); }
-html.still .stage-photo { opacity: .3; transform: none; }
+html.still .stage-photo { opacity: .5; transform: none; }
+html.still .tone { opacity: 0; }
+html.still .reel-pin { height: auto; }
+html.still .reel-track { width: auto; overflow-x: auto; }
 html.still .cue { display: none; }

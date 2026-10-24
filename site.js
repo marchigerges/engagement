@@ -185,13 +185,14 @@
   })
     .to('#cue', { autoAlpha: 0, duration: .3 }, 0)
     .to('#shotGreet', { autoAlpha: 0, y: -24, duration: .8 }, 0)
-    .to('#stagePhoto', { opacity: .24, scale: 1.12, duration: 1.6 }, 0)
+    .to('#stagePhoto', { opacity: .45, scale: 1.12, duration: 1.6 }, 0)
     .to('#shotTitle .were', { clipPath: SHOW, duration: 1.2, ease: 'power1.inOut' }, .7)
     .to('#shotTitle .eng', { clipPath: SHOW, duration: 1.4, ease: 'power1.inOut' }, 1.8)
     .to({}, { duration: .8 })
     .addLabel('lift')
     .to('#shotTitle', { autoAlpha: 0, yPercent: -18, duration: 1 }, 'lift')
-    .to('#stagePhoto', { opacity: .55, scale: 1, duration: 2.2 }, 'lift')
+    .to('#stagePhoto', { opacity: 1, scale: 1, duration: 2.2 }, 'lift')
+    .to('#stageTone', { opacity: 0, duration: 2.2 }, 'lift')
     .to('#shotNames .write', { clipPath: SHOW, duration: 1.4, ease: 'power1.inOut' }, 'lift+=.7')
     .to('#shotNames .caps', { autoAlpha: 1, y: 0, duration: .8 }, '>-.2')
     .to({}, { duration: 1 });
@@ -201,6 +202,7 @@
     scrollTrigger: { trigger: '#chOne .pin', start: 'top top', end: '+=160%', pin: true, scrub: .6, invalidateOnRefresh: true },
   })
     .fromTo('#chOneFrame', { scale: () => chOneStart().s, y: () => chOneStart().y }, { scale: 1, y: 0, ease: 'power2.inOut', duration: 1 })
+    .fromTo('#chOneFrame .tone', { opacity: 1 }, { opacity: 0, duration: .8, ease: 'none' }, .2)
     .fromTo('#chOneText > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, stagger: .15, duration: .5, ease: 'power2.out' }, .65);
 
   // Where the frame must start to fill the pinned screen: measured from layout, never from the
@@ -214,6 +216,23 @@
       y: innerHeight / 2 - (top + f.offsetHeight / 2),
     };
   }
+
+  // Each photograph warms from oxblood to full colour as it reaches the middle of the screen.
+  gsap.utils.toArray('.chapter:not(.ch-one) .frame .tone').forEach(t => {
+    gsap.fromTo(t, { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: { trigger: t.parentNode, start: 'top 85%', end: 'center 50%', scrub: true } });
+  });
+
+  // The reel: the strip slides sideways while the section is held, each photograph warming as it passes.
+  const track = $('reelTrack');
+  const reelDistance = () => Math.max(0, track.scrollWidth - innerWidth);
+  const reelTween = gsap.to(track, {
+    x: () => -reelDistance(), ease: 'none',
+    scrollTrigger: { trigger: '#reel .reel-pin', start: 'top top', end: () => '+=' + reelDistance(), pin: true, scrub: .6, invalidateOnRefresh: true, anticipatePin: 1 },
+  });
+  gsap.utils.toArray('#reelTrack .tone').forEach(t => {
+    gsap.fromTo(t, { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: { trigger: t.parentNode, containerAnimation: reelTween, start: 'left 90%', end: 'center 55%', scrub: true } });
+  });
+  gsap.from('#reel .reel-head > *', { autoAlpha: 0, y: 28, duration: 1.2, stagger: .09, ease: 'power3.out', scrollTrigger: { trigger: '#reel', start: 'top 80%', once: true } });
 
   // Chapter two: two photographs drift past at different speeds.
   gsap.fromTo('#chTwoA', { y: 70 }, { y: -70, ease: 'none', scrollTrigger: { trigger: '#chTwo .pair', start: 'top bottom', end: 'bottom top', scrub: true } });

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Inter+Tight:wght@400;500&display=swap">
 <link rel="stylesheet" href="site.css">
-<link rel="preload" as="image" href="img/couple-hero.webp" type="image/webp">
+<link rel="preload" as="image" href="img/roses.webp" type="image/webp">
 <script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('still');</script>
 </head>
 <body>
@@ -26,7 +26,8 @@
 <main id="film">
   <section class="opening" id="opening" aria-label="We're getting engaged">
     <div class="stage">
-      <img class="stage-photo" id="stagePhoto" src="img/couple-hero.webp" alt="" width="1000" height="800" fetchpriority="high">
+      <div class="stage-photo" id="stagePhoto"><img src="img/roses.webp" alt="Salwa and Marchi" width="1125" height="1500" fetchpriority="high"><span class="tone" id="stageTone" aria-hidden="true"></span></div>
+      <div class="scrim" aria-hidden="true"></div>
       <div class="sheen" aria-hidden="true"></div>
       <div class="shot greet" id="shotGreet"><p class="caps" id="greeting">&nbsp;</p></div>
       <h1 class="shot title" id="shotTitle"><span class="script were write">We’re getting</span><span class="script eng write">Engaged</span></h1>
@@ -40,7 +41,7 @@
 
   <section class="chapter ch-one" id="chOne" aria-labelledby="chOneTitle">
     <div class="pin">
-      <figure class="frame" id="chOneFrame"><img src="img/ch-both.webp" alt="Salwa and Marchi" width="900" height="1125" loading="lazy"></figure>
+      <figure class="frame" id="chOneFrame"><img src="img/garden.webp" alt="Salwa and Marchi at a garden party" width="1125" height="1500"><span class="tone" aria-hidden="true"></span></figure>
       <div class="chapter-text" id="chOneText">
         <div class="chapter-head"><p class="caps dim">Chapter one</p><h2 class="script" id="chOneTitle">Where it began</h2></div>
         <p class="body">A few lines about how you met will go here.</p>
@@ -51,15 +52,28 @@
   <section class="chapter ch-two" id="chTwo" aria-labelledby="chTwoTitle">
     <div class="chapter-head" data-rise><p class="caps dim">Chapter two</p><h2 class="script" id="chTwoTitle">Falling for each other</h2></div>
     <div class="pair">
-      <figure class="frame a" id="chTwoA"><img src="img/ch-him.webp" alt="Marchi" width="720" height="900" loading="lazy"></figure>
-      <figure class="frame b" id="chTwoB"><img src="img/ch-her.webp" alt="Salwa" width="720" height="900" loading="lazy"></figure>
+      <figure class="frame a" id="chTwoA"><img src="img/boat-wave.webp" alt="Salwa and Marchi on a harbour cruise" width="900" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
+      <figure class="frame b" id="chTwoB"><img src="img/boat-sun.webp" alt="Salwa and Marchi in the afternoon sun on the harbour" width="900" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
     </div>
     <div class="chapter-text" data-rise><p class="body">A few lines about the moments that made it real will go here.</p></div>
   </section>
 
+  <section class="reel" id="reel" aria-labelledby="reelTitle">
+    <div class="reel-pin">
+      <div class="chapter-head reel-head"><p class="caps dim">In between</p><h2 class="script" id="reelTitle">Our favourite nights</h2></div>
+      <div class="reel-track" id="reelTrack">
+        <figure class="frame"><img src="img/party.webp" alt="Salwa and Marchi at a celebration" width="900" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
+        <figure class="frame"><img src="img/signs.webp" alt="Salwa and Marchi beside painted cocktail signs" width="675" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
+        <figure class="frame"><img src="img/club.webp" alt="Salwa and Marchi under blue lights" width="900" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
+        <figure class="frame"><img src="img/flash.webp" alt="Salwa and Marchi cheek to cheek" width="1200" height="900" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
+        <figure class="frame"><img src="img/night.webp" alt="Salwa and Marchi on a night out" width="675" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
+      </div>
+    </div>
+  </section>
+
   <section class="chapter ch-three" id="chThree" aria-labelledby="chThreeTitle">
     <div class="chapter-head"><p class="caps dim" data-rise>Chapter three</p><h2 class="script" id="chThreeTitle"><span class="write">The question</span></h2></div>
-    <figure class="frame" id="chThreeFrame"><img src="img/ch-both.webp" alt="Salwa and Marchi" width="900" height="1125" loading="lazy"></figure>
+    <figure class="frame" id="chThreeFrame"><img src="img/diner.webp" alt="Salwa and Marchi in a mirror at a diner booth" width="804" height="1500" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
     <div class="chapter-text" data-rise><p class="body">A few lines about what comes next will go here.</p></div>
   </section>
 
