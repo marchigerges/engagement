@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU" class="locked">
+<html lang="en-AU">
 <head>
 <meta charset="utf-8">
 <title>Salwa &amp; Marchi</title>
@@ -9,76 +9,117 @@
 <meta name="description" content="Salwa and Marchi are getting engaged. Join us on Saturday 23 January 2027, 7pm, at La Riviera, Sydney.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Inter+Tight:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Inter+Tight:wght@400;500&display=swap">
 <link rel="stylesheet" href="site.css">
 <link rel="preload" as="image" href="img/couple-hero.webp" type="image/webp">
+<script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('still');</script>
 </head>
 <body>
-<div class="paper-grain" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
 <div class="vignette" aria-hidden="true"></div>
 
-<section class="screen locked-screen" id="locked" hidden>
-  <p class="script" aria-label="Salwa and Marchi">S &amp; M</p>
+<section class="locked" id="locked" hidden>
+  <p class="script">Salwa &amp; Marchi</p>
   <p class="caps">This invitation is private. Please open the personal link you were sent.</p>
 </section>
 
-<section class="screen gate" id="gate" hidden aria-label="Your invitation">
-  <div class="envelope" id="envelope">
-    <div class="env-liner"></div>
-    <div class="card" id="card" aria-hidden="true">
-      <div class="card-tint" id="cardTint"></div>
-      <div class="face" data-face></div>
+<main id="film">
+  <section class="opening" id="opening" aria-label="We're getting engaged">
+    <div class="stage">
+      <img class="stage-photo" id="stagePhoto" src="img/couple-hero.webp" alt="" width="1000" height="800" fetchpriority="high">
+      <div class="sheen" aria-hidden="true"></div>
+      <div class="shot greet" id="shotGreet"><p class="caps" id="greeting">&nbsp;</p></div>
+      <h1 class="shot title" id="shotTitle"><span class="script were write">We’re getting</span><span class="script eng write">Engaged</span></h1>
+      <div class="shot names" id="shotNames">
+        <p class="script write">Salwa &amp; Marchi</p>
+        <p class="caps">We would love to have you there celebrating with us</p>
+      </div>
+      <p class="caps cue" id="cue">Scroll</p>
     </div>
-    <div class="pocket" id="pocket"><div class="fold l"></div><div class="fold r"></div></div>
-    <div class="flap-shadow" id="flapShadow"></div>
-    <div class="flap-wrap" id="flapWrap"><div class="flap" id="flap"><div class="flap-face"></div><div class="flap-inside"></div></div></div>
-    <div class="seal" id="seal" aria-hidden="true"><span class="half whole"></span><span class="half l"></span><span class="half r"></span></div>
-  </div>
-
-  <form class="code-form" id="codeForm" autocomplete="off" novalidate>
-    <label class="caps" for="code">Enter your access code</label>
-    <div class="code-row">
-      <input class="code-input" id="code" name="code" type="text" inputmode="text" autocapitalize="characters" spellcheck="false" enterkeyhint="go" required>
-      <button class="open-btn" id="openBtn" type="submit">Open</button>
-    </div>
-    <p class="caps try-again" id="tryAgain" aria-live="polite"></p>
-  </form>
-</section>
-
-<main class="site" id="site" hidden>
-  <section class="hero" id="hero" aria-label="We're getting engaged">
-    <div class="hero-photo-wrap" id="heroPhotoWrap"><img class="hero-photo" id="heroPhoto" src="img/couple-hero.webp" alt="Salwa and Marchi" width="1000" height="800" decoding="async"></div>
-    <div class="hero-frame"><div class="face" data-face></div></div>
-    <p class="caps scroll-cue" id="scrollCue">Scroll for the details</p>
   </section>
 
-  <section class="details" id="details" aria-labelledby="detailsTitle">
-    <h2 class="script names" id="detailsTitle" data-reveal><span>Salwa</span><span>&amp; Marchi</span></h2>
-
-    <div class="when" data-reveal>
-      <p class="caps">Saturday</p>
-      <p class="script date">23 January 7pm</p>
+  <section class="chapter ch-one" id="chOne" aria-labelledby="chOneTitle">
+    <div class="pin">
+      <figure class="frame" id="chOneFrame"><img src="img/ch-both.webp" alt="Salwa and Marchi" width="900" height="1125" loading="lazy"></figure>
+      <div class="chapter-text" id="chOneText">
+        <div class="chapter-head"><p class="caps dim">Chapter one</p><h2 class="script" id="chOneTitle">Where it began</h2></div>
+        <p class="body">A few lines about how you met will go here.</p>
+      </div>
     </div>
+  </section>
 
-    <div class="where" data-reveal>
-      <p class="caps strong">La Riviera Restaurant &amp; Bar</p>
-      <p class="caps strong">170 Phillip St, Sydney NSW 2000</p>
+  <section class="chapter ch-two" id="chTwo" aria-labelledby="chTwoTitle">
+    <div class="chapter-head" data-rise><p class="caps dim">Chapter two</p><h2 class="script" id="chTwoTitle">Falling for each other</h2></div>
+    <div class="pair">
+      <figure class="frame a" id="chTwoA"><img src="img/ch-him.webp" alt="Marchi" width="720" height="900" loading="lazy"></figure>
+      <figure class="frame b" id="chTwoB"><img src="img/ch-her.webp" alt="Salwa" width="720" height="900" loading="lazy"></figure>
+    </div>
+    <div class="chapter-text" data-rise><p class="body">A few lines about the moments that made it real will go here.</p></div>
+  </section>
+
+  <section class="chapter ch-three" id="chThree" aria-labelledby="chThreeTitle">
+    <div class="chapter-head"><p class="caps dim" data-rise>Chapter three</p><h2 class="script" id="chThreeTitle"><span class="write">The question</span></h2></div>
+    <figure class="frame" id="chThreeFrame"><img src="img/ch-both.webp" alt="Salwa and Marchi" width="900" height="1125" loading="lazy"></figure>
+    <div class="chapter-text" data-rise><p class="body">A few lines about what comes next will go here.</p></div>
+  </section>
+
+  <section class="evening" id="evening" aria-labelledby="eveningTitle">
+    <h2 class="script" id="eveningTitle"><span class="write">The evening</span></h2>
+    <div class="when" data-rise>
+      <p class="caps">Saturday</p>
+      <p class="script">23 January 7pm</p>
+    </div>
+    <div class="where" data-rise>
+      <p class="caps">La Riviera Restaurant &amp; Bar</p>
+      <p class="caps">170 Phillip St, Sydney NSW 2000</p>
       <p class="caps dim">50m from Martin Place Station</p>
     </div>
-
-    <div class="actions" data-reveal>
-      <a class="text-link caps" id="mapLink" href="https://www.google.com/maps/search/?api=1&amp;query=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000" target="_blank" rel="noopener">View on map</a>
+    <div class="links" data-rise>
+      <a class="text-link caps" href="https://www.google.com/maps/search/?api=1&amp;query=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000" target="_blank" rel="noopener">View on map</a>
       <button class="text-link caps" id="calBtn" type="button">Add to calendar</button>
     </div>
-
-    <dl class="facts" data-reveal>
-      <div><dt class="caps dim">Dress code</dt><dd class="caps strong">Chic cocktail</dd></div>
-      <div><dt class="caps dim">Please reply by</dt><dd class="caps strong">31 December 2026</dd></div>
+    <dl class="facts" data-rise>
+      <div><dt class="caps dim">Dress code</dt><dd class="caps">Chic cocktail</dd></div>
+      <div><dt class="caps dim">Please reply by</dt><dd class="caps">31 December 2026</dd></div>
     </dl>
   </section>
+
+  <section class="countdown" id="countdown" aria-label="Days until the engagement party">
+    <p class="script num" id="days">0</p>
+    <p class="caps" id="daysLabel">Days to go</p>
+  </section>
+
+  <section class="rsvp" id="rsvp" aria-labelledby="rsvpTitle">
+    <div class="reply-card" data-rise>
+      <h2 class="script" id="rsvpTitle">Will you join us?</h2>
+      <p class="caps dim" id="rsvpBy">Please reply by 31 December 2026</p>
+
+      <form id="rsvpForm" novalidate>
+        <fieldset class="guests" id="guests"><legend class="caps" hidden>Who is coming</legend></fieldset>
+        <div class="field">
+          <label class="caps" for="notes">Anything else we should know?</label>
+          <textarea class="notes" id="notes" name="notes" rows="1" maxlength="500"></textarea>
+        </div>
+        <p class="caps form-note" id="formNote" aria-live="polite"></p>
+        <button class="send" id="send" type="submit" disabled>Send reply</button>
+      </form>
+
+      <div class="sent" id="sent" hidden>
+        <ul class="caps" id="sentList"></ul>
+        <p class="caps dim" id="sentLine"></p>
+      </div>
+
+      <p class="caps dim" id="closedNote" hidden>Replies closed on 31 December. If you still need to reply, message Salwa or Marchi.</p>
+    </div>
+  </section>
+
+  <footer class="close">
+    <p class="caps dim">With love</p>
+    <p class="script">Salwa &amp; Marchi</p>
+  </footer>
 </main>
 
-<noscript><div class="screen"><p class="caps">Please turn on JavaScript to open your invitation.</p></div></noscript>
+<noscript><style>.opening{height:auto;overflow:visible}.stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:64px;padding:96px 0 120px}.shot{position:relative;left:auto;right:auto}.stage-photo{opacity:.3;transform:none}.cue,.rsvp{display:none}</style></noscript>
 
 <script>window.INVITE_API = "";</script>
 <script src="vendor/gsap.min.js"></script>

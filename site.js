@@ -1,271 +1,77 @@
 (() => {
   const $ = id => document.getElementById(id);
   const API = window.INVITE_API || '';
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = document.documentElement.classList.contains('still');
+  const PARTY = new Date('2027-01-23T19:00:00+11:00');
 
-  /* ---------- Backend (Apps Script). Without a URL, a local stand-in with two test guests. ---------- */
+  /* ---------- Backend (Apps Script). Without a URL, a local stand-in with two test invites. ---------- */
 
-  const MOCK = {
-    code: 'riviera',
-    invites: {
-      'alex-testguest': ['Alex Testguest'],
-      'jordan-sam': ['Jordan Testguest', 'Sam Plusone'],
-    },
-  };
+  const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Gluten free', 'Dairy free', 'Nut allergy', 'Shellfish allergy', 'Halal', 'Other'];
+  const MOCK = { 'alex-testguest': ['Alex Testguest'], 'jordan-and-sam': ['Jordan Testguest', 'Sam Plusone'] };
+  const mockReplies = {};
   const wait = ms => new Promise(r => setTimeout(r, ms));
 
-  async function lookup(params) {
+  async function getInvite(slug) {
     if (!API) {
-      await wait(350);
-      const guests = MOCK.invites[params.slug];
-      if (!('code' in params)) return { ok: true, exists: !!guests };
-      if (!guests || params.code.trim().toLowerCase() !== MOCK.code) return { ok: false, error: 'denied' };
-      return { ok: true, invite: { guests, rsvp: null, open: true } };
+      await wait(250);
+      const guests = MOCK[slug];
+      return guests ? { ok: true, invite: { guests, rsvp: mockReplies[slug] || null, open: new Date() <= new Date('2026-12-31T23:59:59+11:00'), dietary: DIETARY } } : { ok: false, error: 'not_found' };
     }
-    const res = await fetch(API + '?' + new URLSearchParams(params));
+    return (await fetch(API + '?' + new URLSearchParams({ slug }))).json();
+  }
+
+  async function sendReply(slug, guests, notes) {
+    if (!API) {
+      await wait(700);
+      if (mockReplies[slug]) return { ok: false, error: 'already_replied', invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
+      mockReplies[slug] = { guests, notes };
+      return { ok: true, invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
+    }
+    // text/plain keeps this a simple request, so the browser skips the CORS preflight Apps Script can't answer.
+    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, notes }) });
     return res.json();
   }
 
-  /* ---------- Routing: /<slug> on the live site, #<slug> in previews. ---------- */
+  /* ---------- Who is this for: /<slug> on the live site, #<slug> in previews. ---------- */
 
   function readSlug() {
-    const fromHash = location.hash.replace(/^#/, '');
-    if (fromHash) return decodeURIComponent(fromHash).toLowerCase();
+    const fromHash = decodeURIComponent(location.hash.replace(/^#/, ''));
+    if (fromHash) return fromHash.toLowerCase();
     const parts = location.pathname.split('/').filter(p => p && p !== 'index.html');
     if (location.hostname.endsWith('github.io')) parts.shift(); // project site lives under /engagement/
     return (parts[0] || '').toLowerCase();
   }
+  addEventListener('hashchange', () => location.reload());
 
-  /* ---------- Shared invitation face (card in the envelope and the hero). ---------- */
-
-  const FACE = `
-    <p class="caps greeting" data-greeting></p>
-    <h1 class="script engaged"><span class="were">We’re getting</span><span class="eng">Engaged</span></h1>
-    <p class="caps see">We would love to have you there celebrating with us</p>`;
-  document.querySelectorAll('[data-face]').forEach(el => { el.innerHTML = FACE; });
-  $('card').querySelector('h1').setAttribute('aria-hidden', 'true');
-
-  function greetingFor(guests) {
-    const first = guests.map(n => (/'s\b/.test(n) ? n : n.split(/\s+/)[0]));
-    const names = first.length > 1 ? first.slice(0, -1).join(', ') + ' & ' + first[first.length - 1] : first[0];
-    return 'Dear ' + names;
-  }
-
-  /* ---------- Wax seal: an irregular disc with an S & M monogram, drawn once and split in two. ---------- */
-
-  function sealSVG() {
-    let seed = 7;
-    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    const pts = [];
-    const n = 28;
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      const r = 46 + (i % 2 ? 2.2 : 0) + rand() * 2.4;
-      pts.push([50 + Math.cos(a) * r, 50 + Math.sin(a) * r]);
-    }
-    let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
-    for (let i = 0; i < n; i++) {
-      const p = pts[(i + 1) % n], q = pts[(i + 2) % n];
-      d += ` Q${p[0].toFixed(1)} ${p[1].toFixed(1)} ${((p[0] + q[0]) / 2).toFixed(1)} ${((p[1] + q[1]) / 2).toFixed(1)}`;
-    }
-    return `<svg viewBox="0 0 100 100">
-      <defs>
-        <radialGradient id="waxg" cx="38%" cy="32%" r="75%">
-          <stop offset="0" stop-color="#c4363d"/><stop offset=".45" stop-color="#8c1117"/><stop offset="1" stop-color="#4a0307"/>
-        </radialGradient>
-        <radialGradient id="pressg" cx="60%" cy="65%" r="70%">
-          <stop offset="0" stop-color="#a5222a"/><stop offset="1" stop-color="#7a0d13"/>
-        </radialGradient>
-      </defs>
-      <path d="${d}" fill="url(#waxg)"/>
-      <circle cx="50" cy="50" r="33" fill="url(#pressg)"/>
-      <circle cx="50" cy="50" r="33" fill="none" stroke="#c4363d" stroke-opacity=".45" stroke-width="1.2" transform="translate(.6 .8)"/>
-      <circle cx="50" cy="50" r="27.5" fill="none" stroke="#4a0307" stroke-opacity=".6" stroke-width=".7"/>
-      <g font-family="Pinyon Script, cursive" font-size="30" text-anchor="middle">
-        <text x="50.8" y="60.8" fill="#d9555b" fill-opacity=".7">S&amp;M</text>
-        <text x="50" y="60" fill="#3a0205">S&amp;M</text>
-      </g>
-    </svg>`;
-  }
-  const seal = sealSVG();
-  $('seal').querySelectorAll('.half, .whole').forEach(h => { h.innerHTML = seal; });
-
-  /* ---------- Screens ---------- */
-
-  function show(id) {
-    ['locked', 'gate'].forEach(s => { $(s).hidden = s !== id; });
-    if (window.gsap && !reduced) gsap.fromTo('#' + id, { opacity: 0 }, { opacity: 1, duration: 1.1, ease: 'power2.out' });
-  }
+  const firstName = n => (/'s\b/.test(n) ? n : n.split(/\s+/)[0]);
+  const joinNames = list => (list.length > 1 ? list.slice(0, -1).join(', ') + ' & ' + list[list.length - 1] : list[0]);
 
   const slug = readSlug();
-  addEventListener('hashchange', () => location.reload());
-  const fontsReady = Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), wait(1500)]);
+  let invite = null;
 
-  if (!slug) {
-    fontsReady.then(() => show('locked'));
-  } else {
-    // Show the envelope straight away; an unknown slug swaps to the locked screen when the lookup returns.
-    fontsReady.then(() => show('gate'));
-    lookup({ slug }).then(r => { if (!r.exists) show('locked'); }).catch(() => {});
+  function lock() {
+    $('locked').hidden = false;
+    $('film').hidden = true;
   }
 
-  /* ---------- Access code ---------- */
-
-  const form = $('codeForm'), input = $('code'), btn = $('openBtn'), tryAgain = $('tryAgain');
-  let busy = false;
-
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    if (busy) return;
-    const code = input.value.trim();
-    if (!code) { input.focus(); return; }
-    busy = true;
-    btn.disabled = true;
-    btn.textContent = 'Opening';
-    let r;
-    try { r = await lookup({ slug, code }); } catch (err) { r = { ok: false }; }
-    if (r.ok && r.invite) {
-      input.blur();
-      open(r.invite);
-    } else {
-      wrong();
-      busy = false;
-      btn.disabled = false;
-      btn.textContent = 'Open';
-    }
-  });
-
-  function wrong() {
-    tryAgain.textContent = 'Try again';
-    input.select();
-    if (reduced) { tryAgain.style.opacity = 1; return; }
-    gsap.timeline()
-      .to(['#envelope', '#codeForm .code-row'], { keyframes: { x: [0, -9, 8, -6, 4, -2, 0] }, duration: .6, ease: 'power1.inOut' })
-      .to(tryAgain, { opacity: 1, duration: .5, ease: 'power2.out' }, '<.1');
+  if (!slug) lock();
+  else {
+    getInvite(slug).then(r => {
+      if (!r.ok) return lock();
+      invite = r.invite;
+      $('greeting').textContent = 'Dear ' + joinNames(invite.guests.map(firstName));
+      if (!still) gsap.fromTo('#greeting', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.4, ease: 'power3.out' });
+      renderRsvp();
+    }).catch(() => { $('greeting').textContent = 'Dear friends'; });
   }
 
-  /* ---------- Opening: seal cracks, flap opens, card rises, becomes the page. ---------- */
+  /* ---------- Countdown ---------- */
 
-  function open(invite) {
-    const greeting = greetingFor(invite.guests);
-    document.querySelectorAll('[data-greeting]').forEach(el => { el.textContent = greeting; });
-    window.INVITE = invite;
-    $('gate').classList.add('opening');
-
-    const site = $('site'), gate = $('gate');
-    const finish = () => {
-      gate.hidden = true;
-      document.documentElement.classList.remove('locked');
-      window.scrollTo(0, 0);
-      document.dispatchEvent(new CustomEvent('invite:open', { detail: invite }));
-      startSite();
-    };
-
-    if (reduced) {
-      site.hidden = false;
-      prepHero();
-      gsap.fromTo(site, { opacity: 0 }, { opacity: 1, duration: .4, onComplete: finish });
-      gsap.to(gate, { opacity: 0, duration: .4 });
-      return;
-    }
-
-    const card = $('card');
-    gsap.set('#card .were, #card .eng', { clipPath: WRITE_FROM });
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
-    tl.addLabel('crack')
-      .to(form, { opacity: 0, y: 12, duration: .6, ease: 'power2.in' }, 'crack')
-      .to('#envelope', { y: () => innerHeight * .26, duration: 2.2, ease: 'power3.inOut' }, 'crack')
-      .to('#seal', { scale: .94, duration: .12, ease: 'power2.in' }, 'crack+=.25')
-      .set('#seal .whole', { opacity: 0 })
-      .to('#seal .half.l', { x: '-26%', y: '55%', rotation: -18, opacity: 0, duration: 1, ease: 'power2.in' }, '>')
-      .to('#seal .half.r', { x: '24%', y: '70%', rotation: 14, opacity: 0, duration: 1, ease: 'power2.in' }, '<')
-
-      .addLabel('flap', '-=.55')
-      .to('#flapShadow', { opacity: 0, duration: .3 }, 'flap')
-      .to('#flap', { rotationX: 180, duration: 1.2, ease: 'power3.inOut' }, 'flap')
-      .set('#flapWrap', { zIndex: 1 }, 'flap+=.6')
-
-      .addLabel('rise', '-=.15')
-      .to(card, { y: () => -card.offsetHeight * .62, duration: 1.4, ease: 'power3.inOut' }, 'rise')
-      .to('#card .were', { clipPath: WRITE_TO, duration: 1.3, ease: 'power2.inOut' }, 'rise+=.55')
-      .to('#card .eng', { clipPath: WRITE_TO, duration: 1.6, ease: 'power2.inOut' }, 'rise+=1.4')
-
-      .addLabel('drop', '-=.2')
-      .to(['.env-liner', '#pocket', '#flapWrap'], { y: () => innerHeight * 1.5, duration: 1.2, ease: 'power3.in' }, 'drop')
-      .to(['.env-liner', '#pocket', '#flapWrap'], { opacity: 0, duration: .5, ease: 'power1.in' }, 'drop+=.7')
-      .to(card, {
-        x: () => cardTarget().x,
-        y: () => cardTarget().y,
-        scale: () => cardTarget().s,
-        duration: 1.4,
-        ease: 'expo.inOut',
-      }, 'drop+=1')
-      .to('#cardTint', { opacity: 0, duration: .9, ease: 'power2.inOut' }, '<.5')
-      .call(() => { site.hidden = false; gsap.set(site, { opacity: 0 }); prepHero(); })
-      .to(site, { opacity: 1, duration: .5, ease: 'power1.out' })
-      .call(finish);
-  }
-
-  // Where the card must go so its face lands exactly on the hero frame (top-aligned).
-  let target = null;
-  function cardTarget() {
-    if (target) return target;
-    const card = $('card');
-    const r = card.getBoundingClientRect();
-    const tx = gsap.getProperty(card, 'x'), ty = gsap.getProperty(card, 'y'), ts = gsap.getProperty(card, 'scale');
-    const frameW = Math.min(innerWidth, innerHeight / 1.41);
-    const s = frameW / (r.width / ts);
-    target = {
-      s,
-      x: tx + (innerWidth / 2 - (r.left + r.width / 2)),
-      y: ty + ((r.height / ts) * s / 2 - (r.top + r.height / 2)), // face hangs from the top edge, like the hero
-
-    };
-    return target;
-  }
-
-  /* ---------- Hero: the title was written on the card; here the photo surfaces beneath it. ---------- */
-
-  const WRITE_FROM = 'inset(-30% 102% -40% -12%)', WRITE_TO = 'inset(-30% -12% -40% -12%)';
-  let heroTl = null;
-
-  function prepHero() {
-    if (reduced) return;
-    gsap.set(['#heroPhoto', '#hero .see', '#scrollCue'], { opacity: 0 });
-    gsap.set('#heroPhoto', { scale: 1.06, transformOrigin: '50% 100%' });
-    heroTl = gsap.timeline({ paused: true, defaults: { ease: 'power2.inOut' } })
-      .to('#heroPhoto', { opacity: .42, scale: 1, duration: 2.6, ease: 'power3.out' }, 0)
-      .to('#hero .see', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 1.2)
-      .to('#scrollCue', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 1.9);
-  }
-
-  /* ---------- Scrolling: Lenis drives ScrollTrigger; each detail arrives once. ---------- */
-
-  function startSite() {
-    if (reduced) return;
-    heroTl && heroTl.play();
-    gsap.registerPlugin(ScrollTrigger);
-    const lenis = new Lenis({ lerp: .085 });
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add(t => lenis.raf(t * 1000));
-    gsap.ticker.lagSmoothing(0);
-
-    // Photo sinks and fades as the hero scrolls away.
-    gsap.to('#heroPhotoWrap', { yPercent: 12, opacity: .4, ease: 'none', scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } });
-    gsap.to('#scrollCue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: '#hero', start: 'top top', end: '15% top', scrub: true } });
-
-    // The couple's names write on like the hero; the rest rises in.
-    gsap.fromTo('#details .names span', { clipPath: WRITE_FROM }, {
-      clipPath: WRITE_TO, duration: 1.4, stagger: .45, ease: 'power2.inOut',
-      scrollTrigger: { trigger: '#details .names', start: 'top 80%', once: true },
-    });
-    gsap.utils.toArray('#details [data-reveal]:not(.names)').forEach(el => {
-      gsap.from(el.children, {
-        y: 26, opacity: 0, duration: 1.1, stagger: .08, ease: 'power3.out',
-        scrollTrigger: { trigger: el, start: 'top 86%', once: true },
-      });
-    });
+  const daysLeft = Math.ceil((PARTY - Date.now()) / 864e5);
+  if (daysLeft <= 0) $('countdown').hidden = true;
+  else {
+    $('days').textContent = daysLeft;
+    $('daysLabel').textContent = daysLeft === 1 ? 'Day to go' : 'Days to go';
   }
 
   /* ---------- Add to calendar (.ics) ---------- */
@@ -289,4 +95,157 @@
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   });
+
+  /* ---------- RSVP: one reply per invite, every named guest answered together ---------- */
+
+  const answers = [];
+
+  function renderRsvp() {
+    if (invite.rsvp) return showSent(invite.rsvp);
+    if (!invite.open) { $('rsvpForm').hidden = true; $('closedNote').hidden = false; return; }
+    const box = $('guests');
+    invite.guests.forEach((name, i) => {
+      answers[i] = { name, attending: null, dietary: 'None' };
+      const row = document.createElement('div');
+      row.className = 'guest';
+      row.innerHTML = `
+        <p class="name">${firstName(name).replace(/[<>&]/g, '')}</p>
+        <div class="choice" role="group" aria-label="Is ${firstName(name).replace(/[<>&"]/g, '')} coming?">
+          <button type="button" aria-pressed="false" data-v="yes">Coming</button>
+          <button type="button" aria-pressed="false" data-v="no">Can’t make it</button>
+        </div>
+        <div class="field" hidden>
+          <label class="caps" for="diet${i}">Dietary needs</label>
+          <select class="select" id="diet${i}">${(invite.dietary || DIETARY).map(d => `<option>${d}</option>`).join('')}</select>
+        </div>`;
+      row.querySelector('.choice').addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        answers[i].attending = b.dataset.v === 'yes';
+        row.querySelectorAll('.choice button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        row.querySelector('.field').hidden = !answers[i].attending;
+        $('send').disabled = answers.some(a => a.attending === null);
+        $('formNote').textContent = '';
+      });
+      row.querySelector('select').addEventListener('change', e => { answers[i].dietary = e.target.value; });
+      box.appendChild(row);
+    });
+  }
+
+  $('rsvpForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (answers.some(a => a.attending === null)) return;
+    const send = $('send');
+    send.disabled = true;
+    send.textContent = 'Sending';
+    $('formNote').textContent = '';
+    const guests = answers.map(a => ({ name: a.name, attending: a.attending, dietary: a.attending ? a.dietary : 'None' }));
+    let r;
+    try { r = await sendReply(slug, guests, $('notes').value.trim()); } catch (err) { r = { ok: false, error: 'network' }; }
+    if (r.ok || r.error === 'already_replied') return showSent(r.invite.rsvp, true);
+    send.disabled = false;
+    send.textContent = 'Send reply';
+    $('formNote').textContent = r.error === 'closed'
+      ? 'Replies have closed. Please message Salwa or Marchi.'
+      : 'Your reply didn’t send. Check your connection and try again.';
+  });
+
+  function showSent(rsvp, animate) {
+    const coming = rsvp.guests.filter(g => g.attending);
+    $('rsvpForm').hidden = true;
+    $('rsvpBy').hidden = true;
+    $('rsvpTitle').textContent = coming.length ? 'See you there' : 'We’ll miss you';
+    $('sentList').innerHTML = rsvp.guests.map(g => `<li>${firstName(g.name).replace(/[<>&]/g, '')}: ${g.attending ? 'coming' + (g.dietary && g.dietary !== 'None' ? ', ' + g.dietary.toLowerCase() : '') : 'can’t make it'}</li>`).join('');
+    $('sentLine').textContent = 'Thank you for letting us know. Need to change something? Message Salwa or Marchi.';
+    $('sent').hidden = false;
+    if (animate && !still) gsap.from('#sent > *', { opacity: 0, y: 20, duration: 1, stagger: .1, ease: 'power3.out' });
+  }
+
+  /* ---------- The film ---------- */
+
+  if (still || !window.gsap) return;
+  gsap.registerPlugin(ScrollTrigger);
+  ScrollTrigger.config({ ignoreMobileResize: true });
+
+  // Smooth wheel scrolling on desktop; phones keep their own native scroll.
+  const lenis = new Lenis({ lerp: .09, syncTouch: false });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+
+  const HIDE = 'inset(-40% 102% -60% -12%)', SHOW = 'inset(-40% -12% -60% -12%)';
+  const write = (el, vars) => gsap.fromTo(el, { clipPath: HIDE }, { clipPath: SHOW, ease: 'power2.inOut', ...vars });
+
+  // Opening: one line per screen while the photograph warms in behind.
+  gsap.set(['#shotTitle', '#shotNames'], { autoAlpha: 1 });
+  gsap.set(['#shotTitle .write', '#shotNames .write'], { clipPath: HIDE });
+  gsap.set('#shotNames .caps', { autoAlpha: 0, y: 16 });
+  gsap.timeline({
+    defaults: { ease: 'none' },
+    scrollTrigger: { trigger: '#opening', start: 'top top', end: '+=420%', pin: true, scrub: .6, anticipatePin: 1 },
+  })
+    .to('#cue', { autoAlpha: 0, duration: .3 }, 0)
+    .to('#shotGreet', { autoAlpha: 0, y: -24, duration: .8 }, 0)
+    .to('#stagePhoto', { opacity: .24, scale: 1.12, duration: 1.6 }, 0)
+    .to('#shotTitle .were', { clipPath: SHOW, duration: 1.2, ease: 'power1.inOut' }, .7)
+    .to('#shotTitle .eng', { clipPath: SHOW, duration: 1.4, ease: 'power1.inOut' }, 1.8)
+    .to({}, { duration: .8 })
+    .addLabel('lift')
+    .to('#shotTitle', { autoAlpha: 0, yPercent: -18, duration: 1 }, 'lift')
+    .to('#stagePhoto', { opacity: .55, scale: 1, duration: 2.2 }, 'lift')
+    .to('#shotNames .write', { clipPath: SHOW, duration: 1.4, ease: 'power1.inOut' }, 'lift+=.7')
+    .to('#shotNames .caps', { autoAlpha: 1, y: 0, duration: .8 }, '>-.2')
+    .to({}, { duration: 1 });
+
+  // Chapter one: the photograph fills the screen, then settles into its frame as the words arrive.
+  gsap.timeline({
+    scrollTrigger: { trigger: '#chOne .pin', start: 'top top', end: '+=160%', pin: true, scrub: .6, invalidateOnRefresh: true },
+  })
+    .fromTo('#chOneFrame', { scale: () => chOneStart().s, y: () => chOneStart().y }, { scale: 1, y: 0, ease: 'power2.inOut', duration: 1 })
+    .fromTo('#chOneText > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, stagger: .15, duration: .5, ease: 'power2.out' }, .65);
+
+  // Where the frame must start to fill the pinned screen: measured from layout, never from the
+  // transformed box, so a refresh mid-scroll can't compound the offset.
+  function chOneStart() {
+    const pin = document.querySelector('#chOne .pin'), f = $('chOneFrame'), t = $('chOneText');
+    const gap = parseFloat(getComputedStyle(pin).rowGap) || 0;
+    const top = (pin.offsetHeight - (f.offsetHeight + gap + t.offsetHeight)) / 2;
+    return {
+      s: Math.max(innerWidth / f.offsetWidth, innerHeight / f.offsetHeight) * 1.02,
+      y: innerHeight / 2 - (top + f.offsetHeight / 2),
+    };
+  }
+
+  // Chapter two: two photographs drift past at different speeds.
+  gsap.fromTo('#chTwoA', { y: 70 }, { y: -70, ease: 'none', scrollTrigger: { trigger: '#chTwo .pair', start: 'top bottom', end: 'bottom top', scrub: true } });
+  gsap.fromTo('#chTwoB', { y: 170 }, { y: -170, ease: 'none', scrollTrigger: { trigger: '#chTwo .pair', start: 'top bottom', end: 'bottom top', scrub: true } });
+
+  // Chapter three: the title writes itself, the photograph opens from a slit.
+  write('#chThree .write', { duration: 1.6, scrollTrigger: { trigger: '#chThree .chapter-head', start: 'top 78%', once: true } });
+  gsap.fromTo('#chThreeFrame', { clipPath: 'inset(46% 0% 46% 0%)' }, {
+    clipPath: 'inset(0% 0% 0% 0%)', ease: 'power2.out',
+    scrollTrigger: { trigger: '#chThreeFrame', start: 'top 92%', end: 'center 55%', scrub: .6 },
+  });
+  gsap.fromTo('#chThreeFrame img', { scale: 1.25 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: '#chThreeFrame', start: 'top bottom', end: 'bottom top', scrub: true } });
+
+  // The evening: heading writes on, the rest rises in, one part after another.
+  write('#evening .write', { duration: 1.6, scrollTrigger: { trigger: '#evening h2', start: 'top 80%', once: true } });
+
+  // Everything marked data-rise arrives once, its children staggered.
+  gsap.utils.toArray('[data-rise]').forEach(el => {
+    const parts = el.children.length > 1 ? el.children : el;
+    gsap.from(parts, { autoAlpha: 0, y: 28, duration: 1.2, stagger: .09, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 86%', once: true } });
+  });
+
+  // Countdown: the number counts up to today's figure.
+  if (daysLeft > 0) {
+    const n = { v: 0 };
+    gsap.to(n, {
+      v: daysLeft, duration: 2.2, ease: 'power3.out',
+      onUpdate: () => { $('days').textContent = Math.round(n.v); },
+      scrollTrigger: { trigger: '#countdown', start: 'top 75%', once: true },
+    });
+    gsap.from('#days', { autoAlpha: 0, scale: .92, duration: 1.6, ease: 'power3.out', scrollTrigger: { trigger: '#countdown', start: 'top 75%', once: true } });
+  }
+
+  document.fonts && document.fonts.ready.then(() => ScrollTrigger.refresh());
 })();
