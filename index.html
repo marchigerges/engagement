@@ -6,7 +6,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6a0000">
 <meta name="robots" content="noindex, nofollow">
-<meta name="description" content="Salwa and Marchi are getting engaged. Join us on Saturday 23 January 2027, 7pm, at La Riviera, Sydney.">
+<meta name="description" content="Saturday 23 January 2027, 7pm, at La Riviera, Sydney. Open your personal invitation.">
+<!-- Link previews (iMessage, WhatsApp). og:image must be an absolute URL: update SITE when the custom domain is set. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Salwa &amp; Marchi">
+<meta property="og:title" content="Salwa &amp; Marchi are getting engaged">
+<meta property="og:description" content="Saturday 23 January 2027, 7pm, at La Riviera, Sydney. Open your personal invitation.">
+<meta property="og:image" content="https://marchigerges.github.io/engagement/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="We're getting engaged. Salwa and Marchi, Saturday 23 January, 7pm.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236a0000'/%3E%3Ctext x='32' y='44' font-family='serif' font-style='italic' font-size='34' fill='white' text-anchor='middle'%3ES%26amp;M%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Inter+Tight:wght@400;500&display=swap">
@@ -29,11 +40,15 @@
       <div class="stage-photo" id="stagePhoto"><img src="img/roses.webp" alt="Salwa and Marchi" width="1125" height="1500" fetchpriority="high"><span class="tone" id="stageTone" aria-hidden="true"></span></div>
       <div class="scrim" aria-hidden="true"></div>
       <div class="sheen" aria-hidden="true"></div>
-      <div class="shot greet" id="shotGreet"><p class="caps" id="greeting">&nbsp;</p></div>
+      <div class="shot greet" id="shotGreet">
+        <p class="caps" id="greeting">&nbsp;</p>
+        <p class="caps facts-line">Saturday 23 January, 7pm<br>La Riviera, Sydney</p>
+      </div>
       <h1 class="shot title" id="shotTitle"><span class="script were write">We’re getting</span><span class="script eng write">Engaged</span></h1>
       <div class="shot names" id="shotNames">
         <p class="script write">Salwa &amp; Marchi</p>
         <p class="caps">We would love to have you there celebrating with us</p>
+        <p class="caps facts-line">Saturday 23 January, 7pm, La Riviera</p>
       </div>
       <p class="caps cue" id="cue">Scroll</p>
     </div>
@@ -105,6 +120,11 @@
       <p class="caps dim" id="rsvpBy">Please reply by 31 December 2026</p>
 
       <form id="rsvpForm" novalidate>
+        <div class="rsvp-status" id="rsvpStatus" aria-live="polite">
+          <p class="caps" id="rsvpStatusText">Loading your invitation</p>
+          <button class="text-link caps" id="rsvpRetry" type="button" hidden>Try again</button>
+        </div>
+        <div class="rsvp-fields" id="rsvpFields" hidden>
         <fieldset class="guests" id="guests"><legend class="caps" hidden>Who is coming</legend></fieldset>
         <div class="field">
           <label class="caps" for="song">Request a song</label>
@@ -116,6 +136,7 @@
         </div>
         <p class="caps form-note" id="formNote" aria-live="polite"></p>
         <button class="send" id="send" type="submit" disabled>Send reply</button>
+        </div>
       </form>
 
       <div class="sent" id="sent" hidden>
@@ -158,6 +179,8 @@
     <p class="script">Salwa &amp; Marchi</p>
   </footer>
 </main>
+
+<a class="reply-float" id="replyFloat" href="#rsvp" hidden>Reply</a>
 
 <noscript><style>.opening{height:auto;overflow:visible}.stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:64px;padding:96px 0 120px}.shot{position:relative;left:auto;right:auto}.stage-photo{opacity:.3;transform:none}.cue,.rsvp{display:none}</style></noscript>
 

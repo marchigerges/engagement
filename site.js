@@ -6,7 +6,7 @@
 
   /* ---------- Backend (Apps Script). Without a URL, a local stand-in with two test invites. ---------- */
 
-  const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Gluten free', 'Dairy free', 'Nut allergy', 'Shellfish allergy', 'Halal', 'Other'];
+  const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Pescatarian', 'Gluten free', 'Dairy free', 'Halal', 'Other'];
   const MOCK = { 'alex-testguest': ['Alex Testguest'], 'jordan-and-sam': ['Jordan Testguest', 'Sam Plusone'] };
   const mockReplies = {};
   const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -54,16 +54,28 @@
     $('film').hidden = true;
   }
 
-  if (!slug) lock();
-  else {
+  // Apps Script can take a few seconds to wake, so the reply card says it is loading, and offers a retry if it fails.
+  function load() {
+    $('rsvpStatus').hidden = false;
+    $('rsvpStatusText').textContent = 'Loading your invitation';
+    $('rsvpRetry').hidden = true;
     getInvite(slug).then(r => {
       if (!r.ok) return lock();
       invite = r.invite;
       $('greeting').textContent = 'Dear ' + joinNames(invite.guests.map(firstName));
       if (!still) gsap.fromTo('#greeting', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.4, ease: 'power3.out' });
+      $('rsvpStatus').hidden = true;
       renderRsvp();
-    }).catch(() => { $('greeting').textContent = 'Dear friends'; });
+    }).catch(() => {
+      if (!invite) $('greeting').textContent = 'Dear friends';
+      $('rsvpStatusText').textContent = 'We couldn’t load your reply card. Check your connection and try again.';
+      $('rsvpRetry').hidden = false;
+    });
   }
+  $('rsvpRetry').addEventListener('click', load);
+
+  if (!slug) lock();
+  else load();
 
   /* ---------- Countdown ---------- */
 
@@ -99,10 +111,33 @@
   /* ---------- RSVP: one reply per invite, every named guest answered together ---------- */
 
   const answers = [];
+  let replied = false;
+
+  /* ---------- Reply button: appears once the opening has passed, hides at the reply card and after replying ---------- */
+
+  const float = $('replyFloat');
+  let rsvpInView = false;
+  function floatButton() {
+    const show = !replied && !rsvpInView && scrollY > innerHeight * 1.2 && !$('rsvpForm').hidden;
+    float.hidden = false;
+    float.classList.toggle('show', show);
+    float.tabIndex = show ? 0 : -1;
+    float.setAttribute('aria-hidden', String(!show));
+  }
+  new IntersectionObserver(([e]) => { rsvpInView = e.isIntersecting; floatButton(); }, { threshold: .15 }).observe($('rsvp'));
+  addEventListener('scroll', floatButton, { passive: true });
+  float.addEventListener('click', e => {
+    if (!window.__lenis) return;
+    e.preventDefault();
+    window.__lenis.scrollTo('#rsvp', { offset: -24, duration: 1.6 });
+  });
+
+  const remeasure = () => { if (window.ScrollTrigger) requestAnimationFrame(() => ScrollTrigger.refresh()); };
 
   function renderRsvp() {
     if (invite.rsvp) return showSent(invite.rsvp);
     if (!invite.open) { $('rsvpForm').hidden = true; $('closedNote').hidden = false; return; }
+    $('rsvpFields').hidden = false;
     const box = $('guests');
     invite.guests.forEach((name, i) => {
       answers[i] = { name, attending: null, dietary: 'None', allergies: '' };
@@ -129,6 +164,7 @@
         answers[i].attending = b.dataset.v === 'yes';
         row.querySelectorAll('.choice button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
         row.querySelector('.needs').hidden = !answers[i].attending;
+        remeasure();
         $('send').disabled = answers.some(a => a.attending === null);
         $('formNote').textContent = '';
       });
@@ -136,6 +172,7 @@
       row.querySelector('input').addEventListener('input', e => { answers[i].allergies = e.target.value; });
       box.appendChild(row);
     });
+    remeasure();
   }
 
   $('rsvpForm').addEventListener('submit', async e => {
@@ -157,6 +194,8 @@
   });
 
   function showSent(rsvp, animate) {
+    replied = true;
+    floatButton();
     const coming = rsvp.guests.filter(g => g.attending);
     $('rsvpForm').hidden = true;
     $('rsvpBy').hidden = true;
@@ -167,6 +206,7 @@
       + (rsvp.song ? `<li>Song request: ${esc(rsvp.song)}</li>` : '');
     $('sentLine').textContent = 'Thank you for letting us know. Need to change something? Message Salwa or Marchi.';
     $('sent').hidden = false;
+    remeasure();
     if (animate && !still) gsap.from('#sent > *', { opacity: 0, y: 20, duration: 1, stagger: .1, ease: 'power3.out' });
   }
 
@@ -177,7 +217,7 @@
   ScrollTrigger.config({ ignoreMobileResize: true });
 
   // Smooth wheel scrolling on desktop; phones keep their own native scroll.
-  const lenis = new Lenis({ lerp: .09, syncTouch: false });
+  const lenis = window.__lenis = new Lenis({ lerp: .09, syncTouch: false });
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add(t => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
@@ -191,7 +231,7 @@
   gsap.set('#shotNames .caps', { autoAlpha: 0, y: 16 });
   gsap.timeline({
     defaults: { ease: 'none' },
-    scrollTrigger: { trigger: '#opening', start: 'top top', end: '+=420%', pin: true, scrub: .6, anticipatePin: 1 },
+    scrollTrigger: { trigger: '#opening', start: 'top top', end: '+=260%', pin: true, scrub: .6, anticipatePin: 1 },
   })
     .to('#cue', { autoAlpha: 0, duration: .3 }, 0)
     .to('#shotGreet', { autoAlpha: 0, y: -24, duration: .8 }, 0)

@@ -14,7 +14,7 @@
 const TZ = 'Australia/Sydney';
 const RSVP_BY = new Date('2026-12-31T23:59:59+11:00');
 const MAX_GUESTS = 6;
-const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Gluten free', 'Dairy free', 'Nut allergy', 'Shellfish allergy', 'Halal', 'Other'];
+const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Pescatarian', 'Gluten free', 'Dairy free', 'Halal', 'Other'];
 const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song'];
 // Guest List has two side-by-side tables; columns are 1-based.
 const GUEST_LIST_SIDES = [{ name: 2, rsvp: 3, allergies: 4 }, { name: 8, rsvp: 9, allergies: 10 }];
