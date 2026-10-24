@@ -35,7 +35,7 @@ const sheets = {};
 function add(name, rows) { sheets[name] = makeSheet(name, rows); }
 
 add('Invites', [
-  ['Code', 'Side', 'Group', 'Guest 1', 'Guest 2', 'Guest 3', 'Guest 4', 'Guest 5', 'Guest 6', 'Personal link', 'Check', 'Replied', 'Site address (change to your domain)', 'https://salwa-and-marchi.com/'],
+  ['Code', 'Side', 'Group', 'Guest 1', 'Guest 2', 'Guest 3', 'Guest 4', 'Guest 5', 'Guest 6', 'Personal link', 'Notes', 'Drinkers', 'Replied', 'Site address', 'https://salwa-and-marchi.com/'],
   ['E9mqXIKdiW', 'Salwa', 'Salwa Family', 'Joseph El Chami', 'Noura El Chami'],
   ['qje1H2qBb4', 'Salwa', 'Extended Family', 'Abou Anis', "Abou Anis's wife"],
   ['h3wetsfTbX', 'Salwa', 'Jessica Jebbo Family', 'Jessica Jebbo'],
@@ -91,8 +91,8 @@ assert.equal(invRowOf('E9mqXIKdiW')[9], 'https://salwa-and-marchi.com/joseph-and
 assert.equal(invRowOf('TEST000002')[9], 'https://salwa-and-marchi.com/jordan-and-sam');
 const chase = sheets['To chase'].data;
 log('To chase formulas', [chase[0][0], chase[2][0]]);
-assert.match(chase[0][0], /COUNTIFS\(Invites!D2:D, "<>", Invites!L2:L, ""\)/);
-assert.equal(chase[2][0], '=QUERY(Invites!A1:Z, "select B, C, D, E, F, J where D is not null and L is null order by B, C", 1)');
+assert.match(chase[0][0], /COUNTIFS\(Invites!D2:D, "<>", Invites!M2:M, ""\)/);
+assert.equal(chase[2][0], '=QUERY(Invites!A1:Z, "select B, C, D, E, F, J where D is not null and M is null order by B, C", 1)');
 
 // Lookup
 let r = get({ slug: 'nobody' }); log('unknown slug', r); assert.equal(r.error, 'not_found');
@@ -144,8 +144,8 @@ assert.equal(respRow('TEST000002')[9], 'Jordan Testguest: Peanuts');
 assert.equal(respRow('TEST000002')[10], 'September, Earth Wind & Fire');
 assert.deepEqual(responses[0], ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song']);
 const invRow = c => sheets.Invites.data.find(x => x[0] === c);
-log('Invites "Replied", Jordan', invRow('TEST000002')[11]);
-assert.match(invRow('TEST000002')[11], /^Partial /);
+log('Invites "Replied", Jordan', invRow('TEST000002')[12]);
+assert.match(invRow('TEST000002')[12], /^Partial /);
 const gl = sheets['Guest List'].data;
 log('Guest List rows', gl.slice(3));
 assert.equal(gl[3][2], 'Yes'); assert.equal(gl[3][8], 'Yes'); assert.equal(gl[3][9], 'Vegetarian; Peanuts'); assert.equal(gl[4][8], 'No');
