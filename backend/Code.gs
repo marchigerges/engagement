@@ -2,7 +2,7 @@
  * Engagement invite backend. Bound to the "Engagement Party Guest List" Sheet.
  *
  * GET  ?slug=x                -> { ok, invite: { guests, rsvp, open, rsvpBy, dietary } } or { ok: false, error: 'not_found' }
- * POST text/plain JSON { slug, guests: [{ name, attending, dietary }], notes }
+ * POST text/plain JSON { slug, guests: [{ name, attending, dietary, allergies }], song, notes }
  *                             -> { ok, invite }
  *
  * Invites tab: one row per invite (Code, Guest 1..6). Untouched except "Replied".
@@ -15,7 +15,7 @@ const TZ = 'Australia/Sydney';
 const RSVP_BY = new Date('2026-12-31T23:59:59+11:00');
 const MAX_GUESTS = 6;
 const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Gluten free', 'Dairy free', 'Nut allergy', 'Shellfish allergy', 'Halal', 'Other'];
-const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail'];
+const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song'];
 // Guest List has two side-by-side tables; columns are 1-based.
 const GUEST_LIST_SIDES = [{ name: 2, rsvp: 3, allergies: 4 }, { name: 8, rsvp: 9, allergies: 10 }];
 const GUEST_LIST_FIRST_ROW = 3;
@@ -41,7 +41,8 @@ function doPost(e) {
       const guests = cleanGuests(body.guests, invite.guests);
       if (!guests) return { ok: false, error: 'invalid' };
       const notes = String(body.notes || '').slice(0, 500);
-      saveResponse(invite, guests, notes);
+      const song = String(body.song || '').trim().slice(0, 120);
+      saveResponse(invite, guests, notes, song);
       return { ok: true, invite: publicInvite(findInvite(body.slug)) };
     } finally {
       lock.releaseLock();
@@ -87,9 +88,10 @@ function responsesSheet() {
   let s = sheet('Responses');
   if (!s) {
     s = SpreadsheetApp.getActive().insertSheet('Responses');
-    s.getRange(1, 1, 1, RESPONSE_HEADERS.length).setValues([RESPONSE_HEADERS]);
     s.setFrozenRows(1);
   }
+  // Rewrites the header row so a tab made by an older version gains any new columns.
+  s.getRange(1, 1, 1, RESPONSE_HEADERS.length).setValues([RESPONSE_HEADERS]);
   return s;
 }
 
@@ -120,7 +122,7 @@ function publicInvite(invite) {
   if (r.status) {
     let detail = {};
     try { detail = JSON.parse(r.detail || '{}'); } catch (err) {}
-    rsvp = { guests: detail.guests || [], notes: r.notes || '', submitted: r.submitted ? new Date(r.submitted).toISOString() : null };
+    rsvp = { guests: detail.guests || [], song: detail.song || '', notes: r.notes || '', submitted: r.submitted ? new Date(r.submitted).toISOString() : null };
   }
   return { guests: invite.guests, rsvp, open: new Date() <= RSVP_BY, rsvpBy: RSVP_BY.toISOString(), dietary: DIETARY };
 }
@@ -134,18 +136,20 @@ function cleanGuests(input, names) {
     const g = input[i] || {};
     if (String(g.name || '').trim() !== names[i] || typeof g.attending !== 'boolean') return null;
     const dietary = DIETARY.indexOf(g.dietary) >= 0 ? g.dietary : 'None';
-    out.push({ name: names[i], attending: g.attending, dietary: g.attending ? dietary : 'None' });
+    const allergies = String(g.allergies || '').trim().slice(0, 200);
+    out.push({ name: names[i], attending: g.attending, dietary: g.attending ? dietary : 'None', allergies: g.attending ? allergies : '' });
   }
   return out;
 }
 
-function saveResponse(invite, guests, notes) {
+function saveResponse(invite, guests, notes, song) {
   const attending = guests.filter(g => g.attending);
   const status = attending.length === 0 ? 'Declined' : attending.length === guests.length ? 'Accepted' : 'Partial';
   const dietary = attending.filter(g => g.dietary !== 'None').map(g => g.name + ': ' + g.dietary).join('; ');
+  const allergies = attending.filter(g => g.allergies).map(g => g.name + ': ' + g.allergies).join('; ');
   const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
-  responsesSheet().getRange(invite.response.row, 3, 1, 7).setValues([[
-    invite.guests.join(', '), status, attending.length, dietary, notes, now, JSON.stringify({ guests })
+  responsesSheet().getRange(invite.response.row, 3, 1, 9).setValues([[
+    invite.guests.join(', '), status, attending.length, dietary, notes, now, JSON.stringify({ guests, song }), allergies, song
   ]]);
 
   const inv = sheet('Invites');
@@ -168,7 +172,8 @@ function markGuestList(guests) {
         if (String(values[r][side.name - 1]).trim().toLowerCase() !== key) continue;
         const row = GUEST_LIST_FIRST_ROW + r;
         s.getRange(row, side.rsvp).setValue(g.attending ? 'Yes' : 'No');
-        if (g.attending && g.dietary !== 'None') s.getRange(row, side.allergies).setValue(g.dietary);
+        const needs = [g.dietary !== 'None' ? g.dietary : '', g.allergies].filter(Boolean).join('; ');
+        if (g.attending && needs) s.getRange(row, side.allergies).setValue(needs);
         return;
       }
     }

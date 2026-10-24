@@ -20,15 +20,15 @@
     return (await fetch(API + '?' + new URLSearchParams({ slug }))).json();
   }
 
-  async function sendReply(slug, guests, notes) {
+  async function sendReply(slug, guests, song, notes) {
     if (!API) {
       await wait(700);
       if (mockReplies[slug]) return { ok: false, error: 'already_replied', invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
-      mockReplies[slug] = { guests, notes };
+      mockReplies[slug] = { guests, song, notes };
       return { ok: true, invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
     }
     // text/plain keeps this a simple request, so the browser skips the CORS preflight Apps Script can't answer.
-    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, notes }) });
+    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, song, notes }) });
     return res.json();
   }
 
@@ -105,7 +105,7 @@
     if (!invite.open) { $('rsvpForm').hidden = true; $('closedNote').hidden = false; return; }
     const box = $('guests');
     invite.guests.forEach((name, i) => {
-      answers[i] = { name, attending: null, dietary: 'None' };
+      answers[i] = { name, attending: null, dietary: 'None', allergies: '' };
       const row = document.createElement('div');
       row.className = 'guest';
       row.innerHTML = `
@@ -114,19 +114,26 @@
           <button type="button" aria-pressed="false" data-v="yes">Coming</button>
           <button type="button" aria-pressed="false" data-v="no">Can’t make it</button>
         </div>
-        <div class="field" hidden>
-          <label class="caps" for="diet${i}">Dietary needs</label>
-          <select class="select" id="diet${i}">${(invite.dietary || DIETARY).map(d => `<option>${d}</option>`).join('')}</select>
+        <div class="needs" hidden>
+          <div class="field">
+            <label class="caps" for="diet${i}">Dietary needs</label>
+            <select class="select" id="diet${i}">${(invite.dietary || DIETARY).map(d => `<option>${d}</option>`).join('')}</select>
+          </div>
+          <div class="field">
+            <label class="caps" for="allergy${i}">Allergies</label>
+            <input class="line" id="allergy${i}" type="text" maxlength="200" placeholder="e.g. peanuts, shellfish" autocomplete="off">
+          </div>
         </div>`;
       row.querySelector('.choice').addEventListener('click', e => {
         const b = e.target.closest('button'); if (!b) return;
         answers[i].attending = b.dataset.v === 'yes';
         row.querySelectorAll('.choice button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-        row.querySelector('.field').hidden = !answers[i].attending;
+        row.querySelector('.needs').hidden = !answers[i].attending;
         $('send').disabled = answers.some(a => a.attending === null);
         $('formNote').textContent = '';
       });
       row.querySelector('select').addEventListener('change', e => { answers[i].dietary = e.target.value; });
+      row.querySelector('input').addEventListener('input', e => { answers[i].allergies = e.target.value; });
       box.appendChild(row);
     });
   }
@@ -138,9 +145,9 @@
     send.disabled = true;
     send.textContent = 'Sending';
     $('formNote').textContent = '';
-    const guests = answers.map(a => ({ name: a.name, attending: a.attending, dietary: a.attending ? a.dietary : 'None' }));
+    const guests = answers.map(a => ({ name: a.name, attending: a.attending, dietary: a.attending ? a.dietary : 'None', allergies: a.attending ? a.allergies.trim() : '' }));
     let r;
-    try { r = await sendReply(slug, guests, $('notes').value.trim()); } catch (err) { r = { ok: false, error: 'network' }; }
+    try { r = await sendReply(slug, guests, $('song').value.trim(), $('notes').value.trim()); } catch (err) { r = { ok: false, error: 'network' }; }
     if (r.ok || r.error === 'already_replied') return showSent(r.invite.rsvp, true);
     send.disabled = false;
     send.textContent = 'Send reply';
@@ -154,7 +161,10 @@
     $('rsvpForm').hidden = true;
     $('rsvpBy').hidden = true;
     $('rsvpTitle').textContent = coming.length ? 'See you there' : 'We’ll miss you';
-    $('sentList').innerHTML = rsvp.guests.map(g => `<li>${firstName(g.name).replace(/[<>&]/g, '')}: ${g.attending ? 'coming' + (g.dietary && g.dietary !== 'None' ? ', ' + g.dietary.toLowerCase() : '') : 'can’t make it'}</li>`).join('');
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const needs = g => [g.dietary && g.dietary !== 'None' ? g.dietary.toLowerCase() : '', g.allergies ? 'allergic to ' + esc(g.allergies) : ''].filter(Boolean).join(', ');
+    $('sentList').innerHTML = rsvp.guests.map(g => `<li>${esc(firstName(g.name))}: ${g.attending ? 'coming' + (needs(g) ? ', ' + needs(g) : '') : 'can’t make it'}</li>`).join('')
+      + (rsvp.song ? `<li>Song request: ${esc(rsvp.song)}</li>` : '');
     $('sentLine').textContent = 'Thank you for letting us know. Need to change something? Message Salwa or Marchi.';
     $('sent').hidden = false;
     if (animate && !still) gsap.from('#sent > *', { opacity: 0, y: 20, duration: 1, stagger: .1, ease: 'power3.out' });
@@ -232,13 +242,12 @@
   gsap.utils.toArray('#reelTrack .tone').forEach(t => {
     gsap.fromTo(t, { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: { trigger: t.parentNode, containerAnimation: reelTween, start: 'left 90%', end: 'center 55%', scrub: true } });
   });
-  gsap.from('#reel .reel-head > *', { autoAlpha: 0, y: 28, duration: 1.2, stagger: .09, ease: 'power3.out', scrollTrigger: { trigger: '#reel', start: 'top 80%', once: true } });
 
   // Chapter two: two photographs drift past at different speeds.
-  gsap.fromTo('#chTwoA', { y: 70 }, { y: -70, ease: 'none', scrollTrigger: { trigger: '#chTwo .pair', start: 'top bottom', end: 'bottom top', scrub: true } });
-  gsap.fromTo('#chTwoB', { y: 170 }, { y: -170, ease: 'none', scrollTrigger: { trigger: '#chTwo .pair', start: 'top bottom', end: 'bottom top', scrub: true } });
+  gsap.fromTo('#chTwoA', { y: 70 }, { y: -70, ease: 'none', scrollTrigger: { trigger: '.ch-two-pair .pair', start: 'top bottom', end: 'bottom top', scrub: true } });
+  gsap.fromTo('#chTwoB', { y: 170 }, { y: -170, ease: 'none', scrollTrigger: { trigger: '.ch-two-pair .pair', start: 'top bottom', end: 'bottom top', scrub: true } });
 
-  // Chapter three: the title writes itself, the photograph opens from a slit.
+  // Chapter three: the title writes itself, the ring opens from a slit.
   write('#chThree .write', { duration: 1.6, scrollTrigger: { trigger: '#chThree .chapter-head', start: 'top 78%', once: true } });
   gsap.fromTo('#chThreeFrame', { clipPath: 'inset(46% 0% 46% 0%)' }, {
     clipPath: 'inset(0% 0% 0% 0%)', ease: 'power2.out',
@@ -248,6 +257,7 @@
 
   // The evening: heading writes on, the rest rises in, one part after another.
   write('#evening .write', { duration: 1.6, scrollTrigger: { trigger: '#evening h2', start: 'top 80%', once: true } });
+  write('#faq .write', { duration: 1.4, scrollTrigger: { trigger: '#faq h2', start: 'top 82%', once: true } });
 
   // Everything marked data-rise arrives once, its children staggered.
   gsap.utils.toArray('[data-rise]').forEach(el => {

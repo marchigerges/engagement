@@ -73,18 +73,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .frame img { width: 100%; height: 100%; object-fit: cover; }
 
 /* The reel: pinned while the strip of photographs slides across. */
-.reel { padding-top: clamp(120px, 20svh, 220px); }
-.reel-pin { height: 100svh; display: flex; flex-direction: column; justify-content: center; gap: clamp(28px, 5svh, 48px); overflow: hidden; text-align: center; }
+.reel { padding-top: clamp(24px, 4svh, 48px); }
+.reel-pin { height: 100svh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
 .reel-head { padding: 0 var(--gutter); }
 .reel-track { display: flex; gap: clamp(14px, 3vw, 28px); padding: 0 var(--gutter); width: max-content; will-change: transform; }
-.reel-track .frame { height: min(56svh, 520px); aspect-ratio: 3 / 4; flex: none; }
+.reel-track .frame { height: min(62svh, 560px); aspect-ratio: 3 / 4; flex: none; }
 
 /* Chapter one: the photograph fills the screen, then settles into its frame. */
 .ch-one .pin { height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4svh, 40px); }
 .ch-one .frame { width: min(64vw, 360px, 44svh); aspect-ratio: 4 / 5; will-change: transform; }
+.ch-one .frame img { object-position: 50% 48%; }
 
-/* Chapter two: two photographs drifting at different speeds. */
-.ch-two { padding-top: clamp(120px, 20svh, 220px); }
+/* Chapter two: the reel of years, then two photographs from one harbour day drifting at different speeds. */
+.ch-two { padding-top: clamp(120px, 20svh, 220px); display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.ch-two-pair { padding-top: clamp(40px, 8svh, 96px); }
 .pair { position: relative; height: min(150vw, 820px); max-width: 680px; margin: clamp(40px, 7svh, 72px) auto; }
 .pair .frame { position: absolute; aspect-ratio: 4 / 5; will-change: transform; }
 .pair .a { left: 0; top: 0; width: 66%; }
@@ -92,7 +94,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Chapter three: the photograph opens from a slit to the full frame. */
 .ch-three { padding-top: clamp(120px, 20svh, 220px); }
-.ch-three .frame { width: min(100%, 560px); aspect-ratio: 9 / 14; margin: clamp(40px, 7svh, 72px) auto; will-change: clip-path; }
+.ch-three .frame { width: min(100%, 480px); aspect-ratio: 1 / 1; margin: clamp(40px, 7svh, 72px) auto; will-change: clip-path; }
 
 /* ---------- The evening ---------- */
 .evening { padding: clamp(140px, 22svh, 240px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(52px, 8svh, 84px); text-align: center; }
@@ -121,6 +123,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .rsvp { padding: clamp(120px, 20svh, 220px) var(--gutter) 0; display: flex; justify-content: center; }
 .reply-card { position: relative; width: min(100%, 520px); background: var(--red-lift); padding: clamp(36px, 8vw, 56px) clamp(22px, 6vw, 48px); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 26px; }
 .reply-card h2 { font-size: clamp(3.2rem, 14vw, 4.8rem); }
+#rsvpForm { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 28px; }
 .guests { width: 100%; display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; border: 0; }
 .guest { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 0 22px; }
 .guest + .guest { border-top: 1px solid var(--ink-faint); }
@@ -134,14 +137,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .choice button[aria-pressed="true"] { background: var(--ink); color: var(--red); border-color: var(--ink); }
 .field { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
 .field label { color: var(--ink-dim); }
-.select, .notes {
+.select, .notes, .line {
   width: min(100%, 300px); background: transparent; border: 0; border-bottom: 1px solid var(--ink-faint); border-radius: 0;
   padding: 10px 4px; text-align: center; text-align-last: center; font-size: 1rem; color: var(--ink);
 }
 .select { appearance: none; -webkit-appearance: none; cursor: pointer; }
 .select option { color: #000; }
 .notes { width: 100%; resize: vertical; min-height: 46px; text-align: center; line-height: 1.5; }
-.select:focus, .notes:focus { outline: none; border-bottom-color: var(--ink); }
+.select:focus, .notes:focus, .line:focus { outline: none; border-bottom-color: var(--ink); }
+.line::placeholder, .notes::placeholder { color: var(--ink-faint); }
+.needs { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; }
 .send {
   min-height: 52px; padding: 0 34px; border: 0; background: var(--ink); color: var(--red); cursor: pointer;
   font-weight: 500; font-size: .76rem; letter-spacing: var(--track); text-transform: uppercase;
@@ -153,6 +158,25 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .sent { display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .sent .script { font-size: clamp(3.6rem, 16vw, 5rem); }
 .sent ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+
+/* ---------- FAQ ---------- */
+.faq { padding: clamp(120px, 20svh, 220px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(36px, 6svh, 56px); text-align: center; }
+.faq h2 { font-size: clamp(3.2rem, 14vw, 5.5rem); }
+.faq-list { width: min(100%, 560px); text-align: left; }
+.faq details { border-bottom: 1px solid var(--ink-faint); }
+.faq details:first-child { border-top: 1px solid var(--ink-faint); }
+.faq summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 60px; padding: 14px 2px; font-size: 1.05rem; font-weight: 500;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after {
+  content: ""; flex: none; width: 12px; height: 12px;
+  background: linear-gradient(var(--ink), var(--ink)) center / 100% 1px no-repeat, linear-gradient(var(--ink), var(--ink)) center / 1px 100% no-repeat;
+  transition: transform .4s var(--ease-out);
+}
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p { margin: 0; padding: 0 2px 22px; font-size: 1rem; line-height: 1.6; color: var(--ink-dim); max-width: 46ch; }
 
 /* ---------- Close ---------- */
 .close { padding: clamp(140px, 22svh, 240px) var(--gutter) max(72px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }

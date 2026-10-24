@@ -94,12 +94,14 @@ log('POST renamed plus-one', r); assert.equal(r.error, 'invalid');
 r = post({ slug: 'nobody', guests: [] }); log('POST unknown slug', r); assert.equal(r.error, 'not_found');
 
 // Jordan accepts with dietary, Sam declines
-r = post({ slug: jordan, notes: 'Looking forward to it', guests: [
-  { name: 'Jordan Testguest', attending: true, dietary: 'Vegetarian' },
-  { name: 'Sam Plusone', attending: false, dietary: 'Vegan' },
+r = post({ slug: jordan, notes: 'Looking forward to it', song: 'September, Earth Wind & Fire', guests: [
+  { name: 'Jordan Testguest', attending: true, dietary: 'Vegetarian', allergies: 'Peanuts' },
+  { name: 'Sam Plusone', attending: false, dietary: 'Vegan', allergies: 'Shellfish' },
 ] });
-log('POST Jordan yes (veg) + Sam no', r);
+log('POST Jordan yes (veg, peanuts) + Sam no, with a song', r);
 assert.equal(r.ok, true); assert.equal(r.invite.rsvp.guests[1].dietary, 'None');
+assert.equal(r.invite.rsvp.guests[0].allergies, 'Peanuts'); assert.equal(r.invite.rsvp.guests[1].allergies, '', 'not attending: allergies dropped');
+assert.equal(r.invite.rsvp.song, 'September, Earth Wind & Fire');
 
 r = post({ slug: jordan, guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
 log('POST again (locked)', r); assert.equal(r.error, 'already_replied'); assert.equal(r.invite.rsvp.guests[0].attending, true);
@@ -118,14 +120,17 @@ r = get({ slug: slugOf('h3wetsfTbX') }); assert.equal(r.invite.open, false);
 
 // Sheet side effects
 const respRow = c => responses.find(x => x[0] === c);
-log('Responses row, Jordan', respRow('TEST000002').slice(0, 8));
+log('Responses row, Jordan', respRow('TEST000002').filter((_, i) => i !== 8));
 assert.equal(respRow('TEST000002')[3], 'Partial');
+assert.equal(respRow('TEST000002')[9], 'Jordan Testguest: Peanuts');
+assert.equal(respRow('TEST000002')[10], 'September, Earth Wind & Fire');
+assert.deepEqual(responses[0], ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song']);
 const invRow = c => sheets.Invites.data.find(x => x[0] === c);
 log('Invites "Replied", Jordan', invRow('TEST000002')[11]);
 assert.match(invRow('TEST000002')[11], /^Partial /);
 const gl = sheets['Guest List'].data;
 log('Guest List rows', gl.slice(3));
-assert.equal(gl[3][2], 'Yes'); assert.equal(gl[3][8], 'Yes'); assert.equal(gl[3][9], 'Vegetarian'); assert.equal(gl[4][8], 'No');
+assert.equal(gl[3][2], 'Yes'); assert.equal(gl[3][8], 'Yes'); assert.equal(gl[3][9], 'Vegetarian; Peanuts'); assert.equal(gl[4][8], 'No');
 
 ctx.removeTestGuests();
 assert.ok(!sheets.Invites.data.some(x => /^TEST/.test(x[0])));
