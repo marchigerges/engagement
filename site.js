@@ -40,8 +40,8 @@
 
   const FACE = `
     <p class="caps greeting" data-greeting></p>
-    <h1 class="script engaged"><span class="were">We’re</span><span class="eng">Engaged</span></h1>
-    <p class="caps see">And we would love to see you there</p>`;
+    <h1 class="script engaged"><span class="were">We’re getting</span><span class="eng">Engaged</span></h1>
+    <p class="caps see">We would love to have you there celebrating with us</p>`;
   document.querySelectorAll('[data-face]').forEach(el => { el.innerHTML = FACE; });
   $('card').querySelector('h1').setAttribute('aria-hidden', 'true');
 
@@ -170,11 +170,12 @@
     }
 
     const card = $('card');
+    gsap.set('#card .were, #card .eng', { clipPath: WRITE_FROM });
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
     tl.addLabel('crack')
       .to(form, { opacity: 0, y: 12, duration: .6, ease: 'power2.in' }, 'crack')
-      .to('#envelope', { y: () => innerHeight * .1, duration: 1.4, ease: 'power3.inOut' }, 'crack')
+      .to('#envelope', { y: () => innerHeight * .26, duration: 2.2, ease: 'power3.inOut' }, 'crack')
       .to('#seal', { scale: .94, duration: .12, ease: 'power2.in' }, 'crack+=.25')
       .set('#seal .whole', { opacity: 0 })
       .to('#seal .half.l', { x: '-26%', y: '55%', rotation: -18, opacity: 0, duration: 1, ease: 'power2.in' }, '>')
@@ -186,7 +187,9 @@
       .set('#flapWrap', { zIndex: 1 }, 'flap+=.6')
 
       .addLabel('rise', '-=.15')
-      .to(card, { y: () => -card.offsetHeight * .72, duration: 1.3, ease: 'power3.inOut' }, 'rise')
+      .to(card, { y: () => -card.offsetHeight * .62, duration: 1.4, ease: 'power3.inOut' }, 'rise')
+      .to('#card .were', { clipPath: WRITE_TO, duration: 1.3, ease: 'power2.inOut' }, 'rise+=.55')
+      .to('#card .eng', { clipPath: WRITE_TO, duration: 1.6, ease: 'power2.inOut' }, 'rise+=1.4')
 
       .addLabel('drop', '-=.2')
       .to(['.env-liner', '#pocket', '#flapWrap'], { y: () => innerHeight * 1.5, duration: 1.2, ease: 'power3.in' }, 'drop')
@@ -197,14 +200,14 @@
         scale: () => cardTarget().s,
         duration: 1.4,
         ease: 'expo.inOut',
-      }, 'drop+=.35')
+      }, 'drop+=1')
       .to('#cardTint', { opacity: 0, duration: .9, ease: 'power2.inOut' }, '<.5')
       .call(() => { site.hidden = false; gsap.set(site, { opacity: 0 }); prepHero(); })
       .to(site, { opacity: 1, duration: .5, ease: 'power1.out' })
       .call(finish);
   }
 
-  // Where the card must go so its face lands exactly on the hero frame.
+  // Where the card must go so its face lands exactly on the hero frame (top-aligned).
   let target = null;
   function cardTarget() {
     if (target) return target;
@@ -216,27 +219,25 @@
     target = {
       s,
       x: tx + (innerWidth / 2 - (r.left + r.width / 2)),
-      y: ty + (innerHeight / 2 - (r.top + r.height / 2)),
+      y: ty + ((r.height / ts) * s / 2 - (r.top + r.height / 2)), // face hangs from the top edge, like the hero
+
     };
     return target;
   }
 
-  /* ---------- Hero: the words write themselves on, the photo surfaces beneath. ---------- */
+  /* ---------- Hero: the title was written on the card; here the photo surfaces beneath it. ---------- */
 
   const WRITE_FROM = 'inset(-30% 102% -40% -12%)', WRITE_TO = 'inset(-30% -12% -40% -12%)';
   let heroTl = null;
 
   function prepHero() {
     if (reduced) return;
-    gsap.set('#hero .were, #hero .eng', { clipPath: WRITE_FROM });
     gsap.set(['#heroPhoto', '#hero .see', '#scrollCue'], { opacity: 0 });
     gsap.set('#heroPhoto', { scale: 1.06, transformOrigin: '50% 100%' });
     heroTl = gsap.timeline({ paused: true, defaults: { ease: 'power2.inOut' } })
-      .to('#hero .were', { clipPath: WRITE_TO, duration: 1.3 }, 0)
-      .to('#hero .eng', { clipPath: WRITE_TO, duration: 1.7 }, .95)
-      .to('#heroPhoto', { opacity: .5, scale: 1, duration: 2.6, ease: 'power3.out' }, .6)
-      .to('#hero .see', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 2.4)
-      .to('#scrollCue', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 3.1);
+      .to('#heroPhoto', { opacity: .42, scale: 1, duration: 2.6, ease: 'power3.out' }, 0)
+      .to('#hero .see', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 1.2)
+      .to('#scrollCue', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 1.9);
   }
 
   /* ---------- Scrolling: Lenis drives ScrollTrigger; each detail arrives once. ---------- */
@@ -271,19 +272,19 @@
 
   $('calBtn').addEventListener('click', () => {
     const ics = [
-      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Marchilino and Salwa//Engagement//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Salwa and Marchi//Engagement//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
       'BEGIN:VEVENT',
-      'UID:engagement-20270123@marchilino-salwa',
+      'UID:engagement-20270123@salwa-marchi',
       'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),
       'DTSTART:20270123T080000Z', 'DTEND:20270123T130000Z',
-      'SUMMARY:Marchilino & Salwa engagement',
+      'SUMMARY:Salwa & Marchi engagement',
       'LOCATION:La Riviera Restaurant & Bar\\, 170 Phillip St\\, Sydney NSW 2000',
       'DESCRIPTION:Dress code: chic cocktail. 50m from Martin Place Station.',
       'END:VEVENT', 'END:VCALENDAR',
     ].join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
-    a.download = 'marchilino-salwa-engagement.ics';
+    a.download = 'salwa-marchi-engagement.ics';
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
