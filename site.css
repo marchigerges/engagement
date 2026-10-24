@@ -55,7 +55,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 html.still .chapters > .card + .card { margin-top: 0; }
 .card-shade { position: absolute; inset: 0; z-index: 6; background: #160000; opacity: 0; pointer-events: none; border-radius: inherit; }
 
-/* Optional look: the chapter cards on warm white paper. Add class "light-chapters" to <html>. */
+/* The chapter cards on warm white paper (class "light-chapters" on <html>, on by default; remove it for red cards). */
 html.light-chapters .chapters { --card-bg: #faf6f0; --ink: #6a0000; --ink-dim: rgba(106, 0, 0, .78); --ink-faint: rgba(106, 0, 0, .28); color: var(--ink); }
 html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); }
 
