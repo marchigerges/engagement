@@ -1,16 +1,14 @@
 /**
  * Engagement invite backend. Bound to the "Engagement Party Guest List" Sheet.
  *
- * GET  ?slug=x                -> { ok, exists }                       (gate: show envelope or locked screen)
- * GET  ?slug=x&code=y         -> { ok, invite: { guests, rsvp, open, rsvpBy } }
- * POST text/plain JSON { slug, code, guests: [{ name, attending, dietary }], notes }
- *                             -> { ok, rsvp }
+ * GET  ?slug=x                -> { ok, invite: { guests, rsvp, open, rsvpBy, dietary } } or { ok: false, error: 'not_found' }
+ * POST text/plain JSON { slug, guests: [{ name, attending, dietary }], notes }
+ *                             -> { ok, invite }
  *
  * Invites tab: one row per invite (Code, Guest 1..6). Untouched except "Replied".
- * Responses tab (created on first run): Code, Slug, one row per invite. Slugs are editable.
+ * Responses tab (created on first run): Code, Slug, one row per invite. The slug is the guest's
+ * personal link name (joseph-and-noura). It is generated once; type over it to choose your own.
  * Guest List tab: RSVP / Allergies columns filled per person when a name matches.
- *
- * Script property ACCESS_CODE holds the shared access code (case-insensitive).
  */
 
 const TZ = 'Australia/Sydney';
@@ -24,10 +22,8 @@ const GUEST_LIST_FIRST_ROW = 3;
 
 function doGet(e) {
   return respond(() => {
-    const p = e.parameter || {};
-    const invite = findInvite(p.slug);
-    if (!p.code) return { ok: true, exists: !!invite };
-    if (!invite || !codeMatches(p.code)) return { ok: false, error: 'denied' };
+    const invite = findInvite((e.parameter || {}).slug);
+    if (!invite) return { ok: false, error: 'not_found' };
     return { ok: true, invite: publicInvite(invite) };
   });
 }
@@ -39,7 +35,7 @@ function doPost(e) {
     lock.waitLock(10000);
     try {
       const invite = findInvite(body.slug);
-      if (!invite || !codeMatches(body.code)) return { ok: false, error: 'denied' };
+      if (!invite) return { ok: false, error: 'not_found' };
       if (invite.response.status) return { ok: false, error: 'already_replied', invite: publicInvite(invite) };
       if (new Date() > RSVP_BY) return { ok: false, error: 'closed' };
       const guests = cleanGuests(body.guests, invite.guests);
@@ -57,11 +53,6 @@ function respond(fn) {
   let out;
   try { out = fn(); } catch (err) { out = { ok: false, error: 'server', message: String(err && err.message || err) }; }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
-}
-
-function codeMatches(code) {
-  const expected = PropertiesService.getScriptProperties().getProperty('ACCESS_CODE');
-  return !!expected && String(code).trim().toLowerCase() === expected.trim().toLowerCase();
 }
 
 /* ---------- Reading ---------- */
@@ -191,7 +182,7 @@ function slugify(s) {
     .replace(/'s\b/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-/** Adds a Responses row (with a readable slug) for every invite that lacks one. Safe to re-run. */
+/** Adds a Responses row (with a readable slug) for every invite that lacks one. Safe to re-run; never overwrites a slug. */
 function syncSlugs() {
   const s = responsesSheet();
   const responses = readResponses();
@@ -201,7 +192,8 @@ function syncSlugs() {
   readInvites().forEach(inv => {
     if (responses[inv.code]) return;
     const first = n => slugify(n).split('-')[0];
-    let base = inv.guests.length > 1 ? first(inv.guests[0]) + '-' + first(inv.guests[1]) : slugify(inv.guests[0]);
+    const firsts = inv.guests.map(first);
+    const base = firsts.length === 1 ? slugify(inv.guests[0]) : firsts.slice(0, -1).join('-') + '-and-' + firsts[firsts.length - 1];
     let slug = base, n = 2;
     while (taken[slug]) slug = base + '-' + n++;
     taken[slug] = true;
@@ -211,10 +203,6 @@ function syncSlugs() {
 }
 
 /* ---------- Setup and testing (run from the Apps Script editor) ---------- */
-
-function setAccessCode() {
-  PropertiesService.getScriptProperties().setProperty('ACCESS_CODE', 'CHANGE-ME');
-}
 
 const TEST_INVITES = [['TEST000001', 'Test', 'Test', 'Alex Testguest'], ['TEST000002', 'Test', 'Test', 'Jordan Testguest', 'Sam Plusone']];
 

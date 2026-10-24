@@ -46,16 +46,14 @@ add('Guest List', [
   ['', '', '', '', '', '', 'Test', 'Sam Plusone'],
 ]);
 
-const props = {};
 let now = new Date('2026-11-01T10:00:00+11:00');
 const RealDate = Date;
 class FakeDate extends RealDate { constructor(...a) { super(...(a.length ? a : [now])); } static now() { return now.getTime(); } }
 
 const ctx = {
-  Date: FakeDate, JSON, String, Array, Object, console,
+  Date: FakeDate, JSON, String, Array, Object, Math, console,
   SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] || null, insertSheet: n => (add(n, []), sheets[n]) }) },
-  PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] ?? null, setProperty: (k, v) => { props[k] = v; } }) },
-  LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
   Utilities: { formatDate: d => d.toISOString().slice(0, 16).replace('T', ' ') },
   ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType: () => ({ body: s }) }) },
 };
@@ -67,53 +65,56 @@ const post = b => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(b
 const log = (label, v) => console.log(`\n# ${label}\n` + JSON.stringify(v));
 
 // Setup, as the couple would run it from the editor.
-props.ACCESS_CODE = 'Riviera';
 ctx.addTestGuests();
 const responses = sheets.Responses.data;
 log('Responses tab after addTestGuests (slugs)', responses.map(r => r.slice(0, 2)));
 const slugOf = code => responses.find(r => r[0] === code)[1];
-const alex = slugOf('TEST000001'), jordan = slugOf('TEST000002');
+let alex = slugOf('TEST000001'); const jordan = slugOf('TEST000002');
 assert.equal(alex, 'alex-testguest');
-assert.equal(jordan, 'jordan-sam');
-assert.equal(slugOf('qje1H2qBb4'), 'abou-abou');
+assert.equal(jordan, 'jordan-and-sam');
+assert.equal(slugOf('E9mqXIKdiW'), 'joseph-and-noura');
+assert.equal(slugOf('qje1H2qBb4'), 'abou-and-abou');
+assert.equal(new Set(responses.slice(1).map(r => r[1])).size, responses.length - 1, 'slugs are unique');
 
-// Gate
-let r = get({ slug: 'nobody' }); log('unknown slug', r); assert.equal(r.exists, false);
-r = get({ slug: '' }); log('bare domain (no slug)', r); assert.equal(r.exists, false);
-r = get({ slug: 'Jordan-Sam' }); log('valid slug, any case', r); assert.equal(r.exists, true);
-r = get({ slug: jordan, code: 'wrong' }); log('wrong code', r); assert.equal(r.error, 'denied');
-r = get({ slug: 'nobody', code: 'riviera' }); log('right code, unknown slug', r); assert.equal(r.error, 'denied');
-r = get({ slug: jordan, code: '  rIVIERA ' }); log('right code, case-insensitive', r);
+// Lookup
+let r = get({ slug: 'nobody' }); log('unknown slug', r); assert.equal(r.error, 'not_found');
+r = get({ slug: '' }); log('bare domain (no slug)', r); assert.equal(r.error, 'not_found');
+// A slug typed over in the sheet is the guest's link from then on.
+responses.find(x => x[0] === 'TEST000001')[1] = 'Alex-The-Great';
+r = get({ slug: 'alex-the-great' }); log('custom slug typed in the sheet', r.invite.guests); assert.deepEqual(r.invite.guests, ['Alex Testguest']);
+r = get({ slug: 'alex-testguest' }); assert.equal(r.error, 'not_found');
+r = get({ slug: jordan.toUpperCase() }); log('valid slug, any case', r);
 assert.deepEqual(r.invite.guests, ['Jordan Testguest', 'Sam Plusone']); assert.equal(r.invite.rsvp, null); assert.equal(r.invite.open, true);
 
 // RSVP validation
-r = post({ slug: jordan, code: 'riviera', guests: [{ name: 'Jordan Testguest', attending: true }] });
+r = post({ slug: jordan, guests: [{ name: 'Jordan Testguest', attending: true }] });
 log('POST missing plus-one', r); assert.equal(r.error, 'invalid');
-r = post({ slug: jordan, code: 'riviera', guests: [{ name: 'Jordan Testguest', attending: true }, { name: 'Someone Else', attending: true }] });
+r = post({ slug: jordan, guests: [{ name: 'Jordan Testguest', attending: true }, { name: 'Someone Else', attending: true }] });
 log('POST renamed plus-one', r); assert.equal(r.error, 'invalid');
-r = post({ slug: jordan, code: 'nope', guests: [] }); log('POST wrong code', r); assert.equal(r.error, 'denied');
+r = post({ slug: 'nobody', guests: [] }); log('POST unknown slug', r); assert.equal(r.error, 'not_found');
 
 // Jordan accepts with dietary, Sam declines
-r = post({ slug: jordan, code: 'riviera', notes: 'Looking forward to it', guests: [
+r = post({ slug: jordan, notes: 'Looking forward to it', guests: [
   { name: 'Jordan Testguest', attending: true, dietary: 'Vegetarian' },
   { name: 'Sam Plusone', attending: false, dietary: 'Vegan' },
 ] });
 log('POST Jordan yes (veg) + Sam no', r);
 assert.equal(r.ok, true); assert.equal(r.invite.rsvp.guests[1].dietary, 'None');
 
-r = post({ slug: jordan, code: 'riviera', guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
+r = post({ slug: jordan, guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
 log('POST again (locked)', r); assert.equal(r.error, 'already_replied'); assert.equal(r.invite.rsvp.guests[0].attending, true);
 
-r = get({ slug: jordan, code: 'riviera' }); log('GET after reply shows locked RSVP', r.invite.rsvp); assert.ok(r.invite.rsvp);
+r = get({ slug: jordan }); log('GET after reply shows locked RSVP', r.invite.rsvp); assert.ok(r.invite.rsvp);
 
 // Alex: bogus dietary is coerced, then RSVP closes
-r = post({ slug: alex, code: 'riviera', guests: [{ name: 'Alex Testguest', attending: true, dietary: '<script>' }] });
+alex = 'alex-the-great';
+r = post({ slug: alex, guests: [{ name: 'Alex Testguest', attending: true, dietary: '<script>' }] });
 log('POST Alex yes, bogus dietary', r.invite.rsvp); assert.equal(r.invite.rsvp.guests[0].dietary, 'None');
 
 now = new Date('2027-01-01T00:00:01+11:00');
-r = post({ slug: slugOf('h3wetsfTbX'), code: 'riviera', guests: [{ name: 'Jessica Jebbo', attending: true }] });
+r = post({ slug: slugOf('h3wetsfTbX'), guests: [{ name: 'Jessica Jebbo', attending: true }] });
 log('POST after 31 Dec 2026', r); assert.equal(r.error, 'closed');
-r = get({ slug: slugOf('h3wetsfTbX'), code: 'riviera' }); assert.equal(r.invite.open, false);
+r = get({ slug: slugOf('h3wetsfTbX') }); assert.equal(r.invite.open, false);
 
 // Sheet side effects
 const respRow = c => responses.find(x => x[0] === c);
