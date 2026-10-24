@@ -247,6 +247,17 @@
     .to('#shotNames .caps', { autoAlpha: 1, y: 0, duration: .8 }, '>-.2')
     .to({}, { duration: 1 });
 
+  // Light chapters: the paper (and a lighter vignette) fades in as the chapters arrive and out as they end.
+  if (document.documentElement.classList.contains('light-chapters')) {
+    // refreshPriority -1: measured after the pinned sections, whose extra scroll length moves these points.
+    const into = { trigger: '#chapters', start: 'top 80%', end: 'top 20%', scrub: true, refreshPriority: -1 };
+    const out = { trigger: '#chapters', start: 'bottom 35%', end: 'bottom top', scrub: true, refreshPriority: -1 };
+    gsap.fromTo('#paper', { opacity: 0 }, { opacity: 1, ease: 'none', scrollTrigger: into });
+    gsap.fromTo('#paper', { opacity: 1 }, { opacity: 0, ease: 'none', immediateRender: false, scrollTrigger: out });
+    gsap.fromTo('#vignette', { opacity: 1 }, { opacity: .25, ease: 'none', scrollTrigger: into });
+    gsap.fromTo('#vignette', { opacity: .25 }, { opacity: 1, ease: 'none', immediateRender: false, scrollTrigger: out });
+  }
+
   // Chapter one: the photograph fills the screen, then settles into its frame as the words arrive.
   gsap.timeline({
     scrollTrigger: { trigger: '#chOne .pin', start: 'top top', end: '+=160%', pin: true, scrub: .6, invalidateOnRefresh: true },

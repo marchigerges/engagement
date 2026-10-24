@@ -27,6 +27,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 1px solid var(--ink); outline-offset: 5px; }
 
 .grain, .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+#film { position: relative; z-index: 1; }
 .grain { background: var(--noise); opacity: .045; }
 .vignette { background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(25, 0, 0, .55) 100%); }
 
@@ -35,6 +36,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .script { font-family: var(--script); font-weight: 400; line-height: .92; margin: 0; }
 .body { margin: 0; font-size: 1.05rem; line-height: 1.6; max-width: 32ch; color: var(--ink); font-weight: 400; }
 .write { display: inline-block; padding: 0 .12em; }
+
+/* ---------- Chapters: photographs feathered into the page ---------- */
+/* Soft edges on every side, so each photograph melts into the ground instead of sitting on it like a sticker. */
+.chapters .frame {
+  background: transparent;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent), linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent), linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+  mask-composite: intersect;
+}
+
+/* Optional look: the chapters on warm white paper. Add class "light-chapters" to <html>.
+   A fixed sheet of paper fades in over the red as the chapters arrive and out as they end. */
+.paper { position: fixed; inset: 0; z-index: 0; background: var(--paper, #faf6f0); opacity: 0; pointer-events: none; }
+html.light-chapters .chapters { --ink: #6a0000; --ink-dim: rgba(106, 0, 0, .78); --ink-faint: rgba(106, 0, 0, .28); color: var(--ink); }
+html.light-chapters.still .chapters { background: var(--paper, #faf6f0); }
 
 /* ---------- Locked ---------- */
 .locked { position: fixed; inset: 0; z-index: 40; background: var(--red); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 24px var(--gutter); text-align: center; }
