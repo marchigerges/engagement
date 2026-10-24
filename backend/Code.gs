@@ -5,7 +5,9 @@
  * POST text/plain JSON { slug, guests: [{ name, attending, dietary, allergies }], song, notes }
  *                             -> { ok, invite }
  *
- * Invites tab: one row per invite (Code, Guest 1..6). Untouched except "Replied".
+ * Invites tab: one row per invite (Code, Guest 1..6). The script writes only "Personal link" and "Replied".
+ * Personal links are <Site address>/<slug>; the site address is the cell to the right of "Site address" in row 1.
+ * To chase tab: a live list of invites with no reply yet, rebuilt from the Invitation menu.
  * Responses tab (created on first run): Code, Slug, one row per invite. The slug is the guest's
  * personal link name (joseph-and-noura). It is generated once; type over it to choose your own.
  * Guest List tab: RSVP / Allergies columns filled per person when a name matches.
@@ -108,7 +110,7 @@ function readResponses() {
 function findInvite(slug) {
   slug = String(slug || '').trim().toLowerCase();
   if (!slug) return null;
-  syncSlugs();
+  addMissingSlugs();
   const responses = readResponses();
   const invite = readInvites().find(i => responses[i.code] && responses[i.code].slug === slug);
   if (!invite) return null;
@@ -188,7 +190,7 @@ function slugify(s) {
 }
 
 /** Adds a Responses row (with a readable slug) for every invite that lacks one. Safe to re-run; never overwrites a slug. */
-function syncSlugs() {
+function addMissingSlugs() {
   const s = responsesSheet();
   const responses = readResponses();
   const taken = {};
@@ -205,6 +207,62 @@ function syncSlugs() {
     rows.push([inv.code, slug]);
   });
   if (rows.length) s.getRange(s.getLastRow() + 1, 1, rows.length, 2).setValues(rows);
+}
+
+/* ---------- Links and the chase-up list (Invitation menu in the Sheet) ---------- */
+
+const DEFAULT_SITE = 'https://marchigerges.github.io/engagement';
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('Invitation')
+    .addItem('Create links for new guests', 'syncSlugs')
+    .addItem('Rebuild the To chase tab', 'setupChaseTab')
+    .addToUi();
+}
+
+/** Gives every invite a link name, writes each Personal link, and refreshes the To chase tab. Safe to re-run. */
+function syncSlugs() {
+  addMissingSlugs();
+  writeLinks();
+  setupChaseTab();
+}
+
+function siteAddress() {
+  const header = sheet('Invites').getRange(1, 1, 1, 26).getValues()[0];
+  const i = header.findIndex(h => /^site address/i.test(String(h).trim()));
+  const value = i >= 0 ? String(header[i + 1] || '').trim() : '';
+  // The cell still held the old prototype's claude.ai address; ignore anything that isn't the real site.
+  const usable = /^https?:\/\//.test(value) && !/claude\.ai/.test(value);
+  return (usable ? value : DEFAULT_SITE).replace(/\/+$/, '');
+}
+
+function writeLinks() {
+  const inv = sheet('Invites');
+  const h = headerIndex(inv.getRange(1, 1, 1, inv.getLastColumn()).getValues()[0]);
+  if (h['Personal link'] === undefined) return;
+  const site = siteAddress(), responses = readResponses();
+  readInvites().forEach(i => {
+    const r = responses[i.code];
+    if (r && r.slug) inv.getRange(i.row, h['Personal link'] + 1).setValue(site + '/' + r.slug);
+  });
+}
+
+function columnLetter(i) { let s = ''; for (i++; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s; return s; }
+
+/** A tab that always lists the invites still waiting on a reply, with their link, grouped by side. */
+function setupChaseTab() {
+  const ss = SpreadsheetApp.getActive();
+  const inv = sheet('Invites');
+  const h = headerIndex(inv.getRange(1, 1, 1, inv.getLastColumn()).getValues()[0]);
+  const col = name => columnLetter(h[name]);
+  const cols = ['Side', 'Group', 'Guest 1', 'Guest 2', 'Guest 3', 'Personal link'].filter(n => h[n] !== undefined).map(col);
+  const code = col('Code'), replied = col('Replied');
+  let s = sheet('To chase');
+  if (!s) s = ss.insertSheet('To chase');
+  s.clear();
+  s.getRange(1, 1).setFormula(`="Waiting on " & COUNTIFS(Invites!${code}2:${code}, "<>", Invites!${replied}2:${replied}, "") & " invites"`);
+  s.getRange(3, 1).setFormula(`=QUERY(Invites!A1:Z, "select ${cols.join(', ')} where ${code} is not null and ${replied} is null order by ${col('Side')}, ${col('Group')}", 1)`);
+  s.setFrozenRows(3);
 }
 
 /* ---------- Setup and testing (run from the Apps Script editor) ---------- */

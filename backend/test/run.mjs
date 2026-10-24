@@ -15,6 +15,7 @@ function makeSheet(name, rows) {
     getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => cell(row - 1 + i, col - 1 + j))),
     setValues: v => v.forEach((r, i) => r.forEach((x, j) => put(row - 1 + i, col - 1 + j, x))),
     setValue: v => put(row - 1, col - 1, v),
+    setFormula: f => put(row - 1, col - 1, f),
   });
   const api = {
     name, data,
@@ -25,6 +26,7 @@ function makeSheet(name, rows) {
     appendRow: r => { data[api.getLastRow()] = r.slice(); },
     deleteRow: r => data.splice(r - 1, 1),
     setFrozenRows: () => {},
+    clear: () => { data.length = 0; },
   };
   return api;
 }
@@ -33,7 +35,7 @@ const sheets = {};
 function add(name, rows) { sheets[name] = makeSheet(name, rows); }
 
 add('Invites', [
-  ['Code', 'Side', 'Group', 'Guest 1', 'Guest 2', 'Guest 3', 'Guest 4', 'Guest 5', 'Guest 6', 'Personal link', 'Check', 'Replied', 'Site address', 'https://x'],
+  ['Code', 'Side', 'Group', 'Guest 1', 'Guest 2', 'Guest 3', 'Guest 4', 'Guest 5', 'Guest 6', 'Personal link', 'Check', 'Replied', 'Site address (change to your domain)', 'https://salwa-and-marchi.com/'],
   ['E9mqXIKdiW', 'Salwa', 'Salwa Family', 'Joseph El Chami', 'Noura El Chami'],
   ['qje1H2qBb4', 'Salwa', 'Extended Family', 'Abou Anis', "Abou Anis's wife"],
   ['h3wetsfTbX', 'Salwa', 'Jessica Jebbo Family', 'Jessica Jebbo'],
@@ -75,6 +77,16 @@ assert.equal(jordan, 'jordan-and-sam');
 assert.equal(slugOf('E9mqXIKdiW'), 'joseph-and-noura');
 assert.equal(slugOf('qje1H2qBb4'), 'abou-and-abou');
 assert.equal(new Set(responses.slice(1).map(r => r[1])).size, responses.length - 1, 'slugs are unique');
+
+// Personal links and the chase-up tab
+const invRowOf = c => sheets.Invites.data.find(x => x[0] === c);
+log('Personal links', sheets.Invites.data.slice(1).map(r => r[9]));
+assert.equal(invRowOf('E9mqXIKdiW')[9], 'https://salwa-and-marchi.com/joseph-and-noura', 'site address from the sheet, trailing slash dropped');
+assert.equal(invRowOf('TEST000002')[9], 'https://salwa-and-marchi.com/jordan-and-sam');
+const chase = sheets['To chase'].data;
+log('To chase formulas', [chase[0][0], chase[2][0]]);
+assert.match(chase[0][0], /COUNTIFS\(Invites!A2:A, "<>", Invites!L2:L, ""\)/);
+assert.equal(chase[2][0], '=QUERY(Invites!A1:Z, "select B, C, D, E, F, J where A is not null and L is null order by B, C", 1)');
 
 // Lookup
 let r = get({ slug: 'nobody' }); log('unknown slug', r); assert.equal(r.error, 'not_found');
