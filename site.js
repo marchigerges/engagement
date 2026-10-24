@@ -232,20 +232,12 @@
     gsap.fromTo(t, { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: { trigger: t.parentNode, start: 'top 85%', end: 'center 50%', scrub: true } });
   });
 
-  // The reel: the strip slides sideways while the section is held, each photograph warming as it passes.
-  const track = $('reelTrack');
-  const reelDistance = () => Math.max(0, track.scrollWidth - innerWidth);
-  const reelTween = gsap.to(track, {
-    x: () => -reelDistance(), ease: 'none',
-    scrollTrigger: { trigger: '#reel .reel-pin', start: 'top top', end: () => '+=' + reelDistance(), pin: true, scrub: .6, invalidateOnRefresh: true, anticipatePin: 1 },
+  // Chapter two: the scattered photographs drift at different speeds as they pass.
+  const SPEEDS = [40, 110, 60, 130, 50, 100, 70, 140, 60, 120, 80];
+  gsap.utils.toArray('#scatter .frame').forEach((f, i) => {
+    const d = SPEEDS[i % SPEEDS.length];
+    gsap.fromTo(f, { y: d }, { y: -d, ease: 'none', scrollTrigger: { trigger: f, start: 'top bottom', end: 'bottom top', scrub: true } });
   });
-  gsap.utils.toArray('#reelTrack .tone').forEach(t => {
-    gsap.fromTo(t, { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: { trigger: t.parentNode, containerAnimation: reelTween, start: 'left 90%', end: 'center 55%', scrub: true } });
-  });
-
-  // Chapter two: two photographs drift past at different speeds.
-  gsap.fromTo('#chTwoA', { y: 70 }, { y: -70, ease: 'none', scrollTrigger: { trigger: '.ch-two-pair .pair', start: 'top bottom', end: 'bottom top', scrub: true } });
-  gsap.fromTo('#chTwoB', { y: 170 }, { y: -170, ease: 'none', scrollTrigger: { trigger: '.ch-two-pair .pair', start: 'top bottom', end: 'bottom top', scrub: true } });
 
   // Chapter three: the title writes itself, the ring opens from a slit.
   write('#chThree .write', { duration: 1.6, scrollTrigger: { trigger: '#chThree .chapter-head', start: 'top 78%', once: true } });

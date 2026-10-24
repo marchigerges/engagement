@@ -72,25 +72,30 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .frame { position: relative; overflow: hidden; background: var(--red-deep); margin: 0; }
 .frame img { width: 100%; height: 100%; object-fit: cover; }
 
-/* The reel: pinned while the strip of photographs slides across. */
-.reel { padding-top: clamp(24px, 4svh, 48px); }
-.reel-pin { height: 100svh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-.reel-head { padding: 0 var(--gutter); }
-.reel-track { display: flex; gap: clamp(14px, 3vw, 28px); padding: 0 var(--gutter); width: max-content; will-change: transform; }
-.reel-track .frame { height: min(62svh, 560px); aspect-ratio: 3 / 4; flex: none; }
-
 /* Chapter one: the photograph fills the screen, then settles into its frame. */
 .ch-one .pin { height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4svh, 40px); }
 .ch-one .frame { width: min(64vw, 360px, 44svh); aspect-ratio: 4 / 5; will-change: transform; }
 .ch-one .frame img { object-position: 50% 48%; }
 
-/* Chapter two: the reel of years, then two photographs from one harbour day drifting at different speeds. */
+/* Chapter two: the years as a loose scatter of photographs, mixed sizes on alternating sides,
+   overlapping a little, each drifting at its own speed. */
 .ch-two { padding-top: clamp(120px, 20svh, 220px); display: flex; flex-direction: column; align-items: center; gap: 22px; }
-.ch-two-pair { padding-top: clamp(40px, 8svh, 96px); }
-.pair { position: relative; height: min(150vw, 820px); max-width: 680px; margin: clamp(40px, 7svh, 72px) auto; }
-.pair .frame { position: absolute; aspect-ratio: 4 / 5; will-change: transform; }
-.pair .a { left: 0; top: 0; width: 66%; }
-.pair .b { right: 0; bottom: 0; width: 56%; }
+.scatter { position: relative; width: min(100%, 720px); margin-top: clamp(40px, 7svh, 72px); display: flex; flex-direction: column; }
+.scatter .frame { aspect-ratio: 4 / 5; will-change: transform; }
+.scatter .frame + .frame { margin-top: -14%; }
+.scatter .frame:nth-child(11n+1)  { width: 64%; align-self: flex-start; }
+.scatter .frame:nth-child(11n+2)  { width: 52%; align-self: flex-end; }
+.scatter .frame:nth-child(11n+3)  { width: 58%; align-self: flex-start; margin-left: 6%; }
+.scatter .frame:nth-child(11n+4)  { width: 48%; align-self: flex-end; margin-right: 4%; }
+.scatter .frame:nth-child(11n+5)  { width: 66%; align-self: center; }
+.scatter .frame:nth-child(11n+6)  { width: 54%; align-self: flex-start; }
+.scatter .frame:nth-child(11n+7)  { width: 60%; align-self: flex-end; }
+.scatter .frame:nth-child(11n+8)  { width: 50%; align-self: flex-start; margin-left: 10%; }
+.scatter .frame:nth-child(11n+9)  { width: 62%; align-self: flex-end; }
+.scatter .frame:nth-child(11n+10) { width: 56%; align-self: flex-start; }
+.scatter .frame:nth-child(11n+11) { width: 52%; align-self: flex-end; margin-right: 8%; }
+/* Later photographs sit above earlier ones where they overlap. */
+.scatter .frame:nth-child(even) { z-index: 1; }
 
 /* Chapter three: the photograph opens from a slit to the full frame. */
 .ch-three { padding-top: clamp(120px, 20svh, 220px); }
@@ -188,6 +193,4 @@ html.still .stage { position: relative; display: flex; flex-direction: column; a
 html.still .shot { position: relative; left: auto; right: auto; padding: 0 var(--gutter); }
 html.still .stage-photo { opacity: .5; transform: none; }
 html.still .tone { opacity: 0; }
-html.still .reel-pin { height: auto; }
-html.still .reel-track { width: auto; overflow-x: auto; }
 html.still .cue { display: none; }
