@@ -105,9 +105,9 @@ html.light-chapters.still .chapters { background: var(--paper, #faf6f0); }
 /* Later photographs sit above earlier ones where they overlap. */
 .scatter .frame:nth-child(even) { z-index: 1; }
 
-/* Chapter three: the photograph opens from a slit to the full frame. */
+/* Chapter three: words only. */
 .ch-three { padding-top: clamp(120px, 20svh, 220px); }
-.ch-three .frame { width: min(100%, 480px); aspect-ratio: 1 / 1; margin: clamp(40px, 7svh, 72px) auto; will-change: clip-path; }
+.ch-three .chapter-text { margin-top: clamp(28px, 5svh, 48px); }
 
 /* ---------- The evening ---------- */
 .evening { padding: clamp(140px, 22svh, 240px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(52px, 8svh, 84px); text-align: center; }

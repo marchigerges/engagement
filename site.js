@@ -290,13 +290,8 @@
     gsap.fromTo(f, { y: d }, { y: -d, ease: 'none', scrollTrigger: { trigger: f, start: 'top bottom', end: 'bottom top', scrub: true } });
   });
 
-  // Chapter three: the title writes itself, the ring opens from a slit.
+  // Chapter three: the title writes itself.
   write('#chThree .write', { duration: 1.6, scrollTrigger: { trigger: '#chThree .chapter-head', start: 'top 78%', once: true } });
-  gsap.fromTo('#chThreeFrame', { clipPath: 'inset(46% 0% 46% 0%)' }, {
-    clipPath: 'inset(0% 0% 0% 0%)', ease: 'power2.out',
-    scrollTrigger: { trigger: '#chThreeFrame', start: 'top 92%', end: 'center 55%', scrub: .6 },
-  });
-  gsap.fromTo('#chThreeFrame img', { scale: 1.25 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: '#chThreeFrame', start: 'top bottom', end: 'bottom top', scrub: true } });
 
   // The evening: heading writes on, the rest rises in, one part after another.
   write('#evening .write', { duration: 1.6, scrollTrigger: { trigger: '#evening h2', start: 'top 80%', once: true } });
