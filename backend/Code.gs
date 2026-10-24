@@ -272,11 +272,11 @@ function setupChaseTab() {
   const h = headerIndex(inv.getRange(1, 1, 1, inv.getLastColumn()).getValues()[0]);
   const col = name => columnLetter(h[name]);
   const cols = ['Side', 'Group', 'Guest 1', 'Guest 2', 'Guest 3', 'Personal link'].filter(n => h[n] !== undefined).map(col);
-  const code = col('Code'), replied = col('Replied');
+  const code = col('Guest 1'), replied = col('Replied'); // a row counts once it has a name, before it has a code
   let s = sheet('To chase');
   if (!s) s = ss.insertSheet('To chase');
   s.clear();
-  s.getRange(1, 1).setFormula(`="Waiting on " & COUNTIFS(Invites!${code}2:${code}, "<>", Invites!${replied}2:${replied}, "") & " invites"`);
+  s.getRange(1, 1).setFormula(`="Invites waiting on a reply: " & COUNTIFS(Invites!${code}2:${code}, "<>", Invites!${replied}2:${replied}, "")`);
   s.getRange(3, 1).setFormula(`=QUERY(Invites!A1:Z, "select ${cols.join(', ')} where ${code} is not null and ${replied} is null order by ${col('Side')}, ${col('Group')}", 1)`);
   s.setFrozenRows(3);
 }

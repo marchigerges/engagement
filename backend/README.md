@@ -2,7 +2,7 @@
 
 Invites rows need only names: a row with Guest 1 filled and no Code gets a random Code automatically.
 
-Bound to the **Engagement Party Guest List** Sheet. `Code.gs` is the whole backend.
+Bound to the **Salwa & Marchi – Invitation Backend** Sheet: https://docs.google.com/spreadsheets/d/11FqF_7zmu6lW7Ql3Z3X-k5Ma5cTioANSoRdEp73zKws/edit `Code.gs` is the whole backend.
 
 ## Deploy (once, about 5 minutes)
 

@@ -91,8 +91,8 @@ assert.equal(invRowOf('E9mqXIKdiW')[9], 'https://salwa-and-marchi.com/joseph-and
 assert.equal(invRowOf('TEST000002')[9], 'https://salwa-and-marchi.com/jordan-and-sam');
 const chase = sheets['To chase'].data;
 log('To chase formulas', [chase[0][0], chase[2][0]]);
-assert.match(chase[0][0], /COUNTIFS\(Invites!A2:A, "<>", Invites!L2:L, ""\)/);
-assert.equal(chase[2][0], '=QUERY(Invites!A1:Z, "select B, C, D, E, F, J where A is not null and L is null order by B, C", 1)');
+assert.match(chase[0][0], /COUNTIFS\(Invites!D2:D, "<>", Invites!L2:L, ""\)/);
+assert.equal(chase[2][0], '=QUERY(Invites!A1:Z, "select B, C, D, E, F, J where D is not null and L is null order by B, C", 1)');
 
 // Lookup
 let r = get({ slug: 'nobody' }); log('unknown slug', r); assert.equal(r.error, 'not_found');
