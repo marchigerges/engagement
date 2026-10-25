@@ -1,0 +1,242 @@
+/* Before the question: the printed card as a slow film. White copperplate on deep oxblood,
+   one line per screen, the photograph warming in behind. Everything is centred, like the card. */
+:root {
+  --red: #6a0000;
+  --red-lift: #750206;
+  --red-deep: #3e0002;
+  --ink: #ffffff;
+  --ink-dim: rgba(255, 255, 255, .82);
+  --ink-faint: rgba(255, 255, 255, .26);
+
+  --script: "Pinyon Script", "Snell Roundhand", "Apple Chancery", cursive;
+  --sans: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --track: .14em;
+  --gutter: max(20px, env(safe-area-inset-left, 0px));
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+
+  --noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--red); -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--red); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+img { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 5px; }
+
+.grain, .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+#film { position: relative; z-index: 1; }
+.grain { background: var(--noise); opacity: .045; }
+.vignette { background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(25, 0, 0, .55) 100%); }
+
+.caps { font-weight: 500; text-transform: uppercase; letter-spacing: var(--track); font-size: clamp(.82rem, .76rem + .2vw, .92rem); line-height: 1.7; margin: 0; }
+.caps.dim { color: var(--ink-dim); }
+.script { font-family: var(--script); font-weight: 400; line-height: .92; margin: 0; }
+.body { margin: 0; font-size: 1.05rem; line-height: 1.6; max-width: 32ch; color: var(--ink); font-weight: 400; }
+.write { display: inline-block; padding: 0 .12em; }
+
+/* ---------- Chapters ---------- */
+/* The opening and the chapters are a stack of cards: each one holds still while the next slides up over it.
+   A card taller than the screen holds once its bottom reaches the bottom of the screen (--stick, set in site.js). */
+.stack { position: relative; }
+.opening { position: sticky; top: 0; z-index: 0; }
+.chapters { position: relative; z-index: 1; }
+.card, .chapter.card {
+  position: sticky; top: var(--stick, 0px);
+  min-height: 100svh; background: var(--card-bg, var(--red));
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -22px 44px -16px rgba(25, 0, 0, .6);
+  transform-origin: 50% var(--origin, 50%);
+}
+/* A pause between cards: each one sits fully on screen for a moment before the next slides over it. */
+.chapters > .card + .card { margin-top: 45svh; }
+html.still .chapters > .card + .card { margin-top: 0; }
+.card-shade { position: absolute; inset: 0; z-index: 6; background: #160000; opacity: 0; pointer-events: none; border-radius: inherit; }
+
+/* The chapter cards on warm white paper (class "light-chapters" on <html>, on by default; remove it for red cards). */
+html.light-chapters .chapters { --card-bg: #faf6f0; --ink: #6a0000; --ink-dim: rgba(106, 0, 0, .78); --ink-faint: rgba(106, 0, 0, .28); color: var(--ink); }
+html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); }
+
+/* ---------- Locked ---------- */
+.locked { position: fixed; inset: 0; z-index: 40; background: var(--red); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 24px var(--gutter); text-align: center; }
+.locked .script { font-size: clamp(3.6rem, 16vw, 6rem); }
+.locked .caps { color: var(--ink-dim); max-width: 30ch; }
+
+/* ---------- Opening: one screen that plays itself ---------- */
+.opening { height: 100svh; overflow: hidden; }
+.stage {
+  position: absolute; inset: 0; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(28px, 6svh, 56px);
+  padding: max(28px, env(safe-area-inset-top)) 0 clamp(84px, 14svh, 120px);
+}
+.stage-photo { position: absolute; inset: 0; opacity: .18; transform: scale(1.2); will-change: transform, opacity; }
+.stage-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+/* A shade over the photograph so white type always reads, deepest where the words sit. */
+.scrim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(90% 60% at 50% 45%, rgba(50, 0, 0, .55), rgba(50, 0, 0, .25) 70%, rgba(50, 0, 0, .5)); }
+
+/* Every photograph starts tinted to the card's oxblood and warms to full colour as it arrives.
+   The tint is a colour-blend layer, so the reveal is an opacity change only. */
+.tone { position: absolute; inset: 0; pointer-events: none; background: var(--red); mix-blend-mode: color; }
+.tone::after { content: ""; position: absolute; inset: 0; background: var(--red); mix-blend-mode: multiply; opacity: .45; }
+.sheen { position: absolute; inset: -20% -30% auto auto; width: 90%; height: 120%; pointer-events: none; background: linear-gradient(118deg, transparent 38%, rgba(255, 255, 255, .05) 50%, transparent 62%); }
+.shot { position: relative; padding: 0 var(--gutter); display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 0; will-change: transform, opacity; }
+.shot.greet { gap: 14px; }
+.title .were { font-size: clamp(3.4rem, min(16vw, 9svh), 8rem); white-space: nowrap; }
+.title .eng { font-size: clamp(4rem, min(20vw, 11svh), 10rem); transform: translateX(-.15em); margin-top: .06em; }
+.shot.names .script { font-size: clamp(2.6rem, min(12vw, 7svh), 6rem); white-space: nowrap; }
+.shot.names .caps { max-width: 28ch; }
+.cue { position: absolute; left: 0; right: 0; bottom: max(28px, env(safe-area-inset-bottom)); text-align: center; color: var(--ink-dim); }
+.cue::after { content: ""; display: block; width: 1px; height: 34px; margin: 12px auto 0; background: var(--ink-faint); transform-origin: 50% 0; animation: cue 2.4s var(--ease-out) infinite; }
+@keyframes cue { 0% { transform: scaleY(0); } 55% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* ---------- Story ---------- */
+.chapter { position: relative; padding: 0 var(--gutter); text-align: center; }
+.chapter-head { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.chapter-head .script { font-size: clamp(3.3rem, 14vw, 6.2rem); line-height: 1; }
+.chapter-text { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.frame { position: relative; overflow: hidden; background: var(--red-deep); margin: 0; }
+.frame img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Chapter one: one screen, the photograph settling into its frame as the card arrives. */
+.ch-one .pin { min-height: 100svh; padding: clamp(32px, 6svh, 72px) 0 calc(env(safe-area-inset-bottom, 0px) + 100px); /* last line clears the Reply button */ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4svh, 40px); }
+.ch-one .frame { width: min(50vw, 320px, 30svh); aspect-ratio: 4 / 5; will-change: transform; }
+.ch-one .frame img { object-position: 50% 48%; }
+
+/* Chapter two: the years as a loose scatter of photographs, mixed sizes on alternating sides,
+   overlapping a little, each drifting at its own speed. */
+.ch-two { padding-block: clamp(72px, 12svh, 120px); display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.scatter { position: relative; width: min(100%, 720px); margin-top: clamp(40px, 7svh, 72px); display: flex; flex-direction: column; }
+.scatter .frame { aspect-ratio: 4 / 5; will-change: transform; }
+.scatter .frame + .frame { margin-top: -14%; }
+.scatter .frame:nth-child(11n+1)  { width: 64%; align-self: flex-start; }
+.scatter .frame:nth-child(11n+2)  { width: 52%; align-self: flex-end; }
+.scatter .frame:nth-child(11n+3)  { width: 58%; align-self: flex-start; margin-left: 6%; }
+.scatter .frame:nth-child(11n+4)  { width: 48%; align-self: flex-end; margin-right: 4%; }
+.scatter .frame:nth-child(11n+5)  { width: 66%; align-self: center; }
+.scatter .frame:nth-child(11n+6)  { width: 54%; align-self: flex-start; }
+.scatter .frame:nth-child(11n+7)  { width: 60%; align-self: flex-end; }
+.scatter .frame:nth-child(11n+8)  { width: 50%; align-self: flex-start; margin-left: 10%; }
+.scatter .frame:nth-child(11n+9)  { width: 62%; align-self: flex-end; }
+.scatter .frame:nth-child(11n+10) { width: 56%; align-self: flex-start; }
+.scatter .frame:nth-child(11n+11) { width: 52%; align-self: flex-end; margin-right: 8%; }
+/* Later photographs sit above earlier ones where they overlap. */
+.scatter .frame:nth-child(even) { z-index: 1; }
+
+/* Chapter three: words only. */
+.ch-three { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-block: 64px; }
+.ch-three .chapter-text { margin-top: clamp(28px, 5svh, 48px); }
+
+/* ---------- The evening ---------- */
+.evening { padding: clamp(88px, 14svh, 150px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(52px, 8svh, 84px); text-align: center; }
+.evening h2 { font-size: clamp(3.4rem, 15vw, 6.5rem); }
+.when { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.when .script { font-size: clamp(3rem, 13.5vw, 6.4rem); white-space: nowrap; }
+.where { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.where .dim { margin-top: 10px; }
+.links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 32px; margin-top: calc(clamp(52px, 8svh, 84px) * -.55); }
+.text-link {
+  background: none; border: 0; padding: 12px 2px; cursor: pointer; text-decoration: none; color: var(--ink);
+  background-image: linear-gradient(var(--ink-faint), var(--ink-faint)); background-size: 100% 1px; background-position: 0 calc(100% - 8px); background-repeat: no-repeat;
+  transition: color .4s var(--ease-out);
+}
+.text-link:hover { color: var(--ink-dim); }
+.facts { margin: 0; display: grid; gap: 34px; justify-items: center; }
+.facts div { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.facts dd { margin: 0; }
+.facts .dress-note { font-size: 1rem; line-height: 1.55; max-width: 30ch; text-align: center; }
+
+
+/* ---------- Countdown ---------- */
+
+/* ---------- RSVP ---------- */
+.rsvp { padding: clamp(88px, 14svh, 150px) var(--gutter) 0; display: flex; justify-content: center; }
+.reply-card { position: relative; width: min(100%, 520px); background: var(--red-lift); padding: clamp(36px, 8vw, 56px) clamp(22px, 6vw, 48px); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 26px; }
+.reply-card h2 { font-size: clamp(3.2rem, 14vw, 4.8rem); }
+#rsvpForm, .rsvp-fields { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 28px; }
+.guests { width: 100%; display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; border: 0; }
+.guest { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 0 22px; }
+.guest + .guest { border-top: 1px solid var(--ink-faint); }
+.guest .name { font-family: var(--script); font-size: 2.6rem; line-height: 1; }
+.choice { display: flex; gap: 10px; }
+.choice button {
+  min-height: 46px; padding: 0 18px; border: 1px solid var(--ink-faint); background: transparent; cursor: pointer;
+  font-weight: 500; font-size: .72rem; letter-spacing: var(--track); text-transform: uppercase;
+  transition: background-color .3s, color .3s, border-color .3s;
+}
+.choice button[aria-pressed="true"] { background: var(--ink); color: var(--red); border-color: var(--ink); }
+.field { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+.field label { color: var(--ink-dim); }
+.select, .notes, .line {
+  width: min(100%, 300px); background: transparent; border: 0; border-bottom: 1px solid var(--ink-faint); border-radius: 0;
+  padding: 10px 4px; text-align: center; text-align-last: center; font-size: 1rem; color: var(--ink);
+}
+.select {
+  appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 28px; padding-left: 28px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 6px center;
+}
+.select option { color: #000; }
+.notes { width: 100%; resize: vertical; min-height: 46px; text-align: center; line-height: 1.5; }
+.select:focus, .notes:focus, .line:focus { outline: none; border-bottom-color: var(--ink); }
+.line::placeholder, .notes::placeholder { color: var(--ink-faint); }
+.needs { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; }
+.send {
+  min-height: 52px; padding: 0 34px; border: 0; background: var(--ink); color: var(--red); cursor: pointer;
+  font-weight: 500; font-size: .76rem; letter-spacing: var(--track); text-transform: uppercase;
+  transition: opacity .3s, transform .3s var(--ease-out);
+}
+.send:active { transform: scale(.98); }
+.send[disabled] { opacity: .4; cursor: default; }
+.form-note { min-height: 1.7em; color: var(--ink-dim); max-width: 32ch; }
+.sent { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.sent .script { font-size: clamp(3.6rem, 16vw, 5rem); }
+.sent ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+
+/* The key facts, on the first screen and again with the names. */
+.facts-line { color: var(--ink-dim); margin-top: 6px; }
+
+/* Reply card while the guest list loads, or if it can't. */
+.rsvp-status { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--ink-dim); max-width: 32ch; }
+
+/* A way to the reply card from anywhere in the film. */
+.reply-float {
+  position: fixed; z-index: 30; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  min-height: 46px; padding: 0 22px; display: inline-flex; align-items: center;
+  background: var(--ink); color: var(--red); text-decoration: none;
+  font-weight: 500; font-size: .8rem; letter-spacing: var(--track); text-transform: uppercase;
+  box-shadow: 0 12px 28px -10px rgba(20, 0, 0, .7);
+  transform: translateY(140%); opacity: 0; transition: transform .7s var(--ease-out), opacity .4s;
+}
+.reply-float.show { transform: none; opacity: 1; }
+
+/* ---------- FAQ ---------- */
+.faq { padding: clamp(88px, 14svh, 150px) var(--gutter) 0; display: flex; flex-direction: column; align-items: center; gap: clamp(36px, 6svh, 56px); text-align: center; }
+.faq h2 { font-size: clamp(3.2rem, 14vw, 5.5rem); }
+.faq-list { width: min(100%, 560px); text-align: left; }
+.faq details { border-bottom: 1px solid var(--ink-faint); }
+.faq details:first-child { border-top: 1px solid var(--ink-faint); }
+.faq summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 60px; padding: 14px 2px; font-size: 1.05rem; font-weight: 500;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after {
+  content: ""; flex: none; width: 12px; height: 12px;
+  background: linear-gradient(var(--ink), var(--ink)) center / 100% 1px no-repeat, linear-gradient(var(--ink), var(--ink)) center / 1px 100% no-repeat;
+  transition: transform .4s var(--ease-out);
+}
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p + p { margin-top: -10px; }
+.faq details a { color: var(--ink); text-underline-offset: 4px; text-decoration-color: var(--ink-faint); }
+.faq details p { margin: 0; padding: 0 2px 22px; font-size: 1.02rem; line-height: 1.6; color: var(--ink); max-width: 46ch; }
+
+/* ---------- Close ---------- */
+.close { padding: clamp(88px, 14svh, 150px) var(--gutter) max(72px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.close .script { font-size: clamp(3rem, 13vw, 5.5rem); }
+
+/* ---------- Without motion: everything simply sits on the page ---------- */
+html.still .opening, html.still .card { position: relative; top: auto; }
+html.still .stage-photo { opacity: .5; transform: none; }
+html.still .tone { opacity: 0; }
+html.still .cue { display: none; }
