@@ -231,7 +231,61 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Invitation')
     .addItem('Create links for new guests', 'syncSlugs')
     .addItem('Rebuild the To chase tab', 'setupChaseTab')
+    .addSeparator()
+    .addItem('Clear the reply for the selected invitation', 'clearSelectedReply')
+    .addItem('Remove the selected invitation', 'removeSelectedInvitation')
     .addToUi();
+}
+
+/* ---------- Editing replies and invitations (select any cell in that row on Invites or Responses) ---------- */
+
+function selectedCode() {
+  const s = SpreadsheetApp.getActiveSheet();
+  const row = s.getActiveRange().getRow();
+  if (['Invites', 'Responses'].indexOf(s.getName()) < 0 || row < 2) return null;
+  return String(s.getRange(row, 1).getValue() || '').trim() || null;
+}
+
+function selectedInviteNames(code) {
+  const inv = readInvites().find(i => i.code === code);
+  return inv ? inv.guests.join(', ') : code;
+}
+
+/** Wipes a reply so that invitation can reply again on the same link. */
+function clearSelectedReply() {
+  const ui = SpreadsheetApp.getUi(), code = selectedCode();
+  if (!code) return ui.alert('Click a cell in the invitation\'s row on the Invites or Responses tab first.');
+  const ok = ui.alert('Clear this reply?', selectedInviteNames(code) + ' will be able to reply again on the same link.', ui.ButtonSet.OK_CANCEL);
+  if (ok === ui.Button.OK) clearReply(code);
+}
+
+/** Deletes an invitation and its reply. Its link stops working. */
+function removeSelectedInvitation() {
+  const ui = SpreadsheetApp.getUi(), code = selectedCode();
+  if (!code) return ui.alert('Click a cell in the invitation\'s row on the Invites or Responses tab first.');
+  const ok = ui.alert('Remove this invitation?', selectedInviteNames(code) + ' will be deleted, with any reply, and their link will stop working.', ui.ButtonSet.OK_CANCEL);
+  if (ok === ui.Button.OK) removeInvitation(code);
+}
+
+function rowsWithCode(name, code) {
+  const s = sheet(name);
+  const codes = s.getRange(1, 1, Math.max(1, s.getLastRow()), 1).getValues();
+  const rows = [];
+  for (let r = codes.length; r >= 2; r--) if (String(codes[r - 1][0]).trim() === code) rows.push(r);
+  return rows; // bottom-up, safe to delete in order
+}
+
+function clearReply(code) {
+  const res = responsesSheet();
+  rowsWithCode('Responses', code).forEach(r => res.getRange(r, 3, 1, RESPONSE_HEADERS.length - 2).setValues([Array(RESPONSE_HEADERS.length - 2).fill('')]));
+  const inv = sheet('Invites');
+  const h = headerIndex(inv.getRange(1, 1, 1, inv.getLastColumn()).getValues()[0]);
+  if (h['Replied'] !== undefined) rowsWithCode('Invites', code).forEach(r => inv.getRange(r, h['Replied'] + 1).setValue(''));
+}
+
+function removeInvitation(code) {
+  rowsWithCode('Responses', code).forEach(r => responsesSheet().deleteRow(r));
+  rowsWithCode('Invites', code).forEach(r => sheet('Invites').deleteRow(r));
 }
 
 /** Gives every invite a link name, writes each Personal link, and refreshes the To chase tab. Safe to re-run. */

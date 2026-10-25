@@ -150,6 +150,21 @@ const gl = sheets['Guest List'].data;
 log('Guest List rows', gl.slice(3));
 assert.equal(gl[3][2], 'Yes'); assert.equal(gl[3][8], 'Yes'); assert.equal(gl[3][9], 'Vegetarian; Peanuts'); assert.equal(gl[4][8], 'No');
 
+// Clearing a reply: same link, can reply again
+ctx.clearReply('TEST000002');
+r = get({ slug: jordan }); log('after clearReply', r.invite.rsvp); assert.equal(r.invite.rsvp, null);
+assert.equal(respRow('TEST000002')[1], jordan, 'link kept');
+assert.equal(invRow('TEST000002')[12], '', 'Replied cleared');
+now = new Date('2026-11-20T10:00:00+11:00');
+r = post({ slug: jordan, guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
+assert.equal(r.ok, true); assert.equal(respRow('TEST000002')[3], 'Declined');
+
+// Removing an invitation: both rows go, the link stops working
+ctx.removeInvitation('TEST000001');
+assert.ok(!sheets.Invites.data.some(x => x[0] === 'TEST000001')); assert.ok(!responses.some(x => x[0] === 'TEST000001'));
+r = get({ slug: alex }); assert.equal(r.error, 'not_found');
+console.log('\nclearReply and removeInvitation: ok');
+
 ctx.removeTestGuests();
 assert.ok(!sheets.Invites.data.some(x => /^TEST/.test(x[0])));
 assert.ok(!responses.some(x => /^TEST/.test(x[0])));
