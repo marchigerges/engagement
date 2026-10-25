@@ -50,7 +50,7 @@ function doPost(e) {
       const phone = String(body.phone || '').trim().slice(0, 20);
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
       saveResponse(invite, guests, notes, song, validEmail, phone);
-      if (validEmail) sendConfirmation(validEmail, guests, song);
+      if (validEmail) sendConfirmation(validEmail, guests, song, invite.response.slug);
       return { ok: true, invite: publicInvite(findInvite(body.slug)) };
     } finally {
       lock.releaseLock();
@@ -169,29 +169,88 @@ function saveResponse(invite, guests, notes, song, email, phone) {
 
 /* ---------- Confirmation email ---------- */
 
-function sendConfirmation(to, guests, song) {
+const EVENT = {
+  title: "Salwa & Marchi's Engagement",
+  date: 'Saturday 23 January 2027, 7pm',
+  venue: 'La Riviera Restaurant & Bar',
+  address: '170 Phillip St, Sydney NSW 2000',
+  transport: '50m from Martin Place Station',
+  dress: 'Chic cocktail attire: satin silhouettes, timeless neutrals and classic black; tailored suits for gentlemen. White and ivory are reserved for the bride-to-be.',
+  map: 'https://www.google.com/maps/search/?api=1&query=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000',
+  calendar: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Salwa+%26+Marchi%27s+Engagement&dates=20270123T080000Z/20270123T130000Z&location=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000&details=Dress+code%3A+chic+cocktail+attire.',
+};
+
+function calendarFile() {
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Salwa and Marchi//Engagement//EN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    'UID:engagement-20270123@salwa-marchi', 'DTSTAMP:20261101T000000Z', 'DTSTART:20270123T080000Z', 'DTEND:20270123T130000Z',
+    "SUMMARY:Salwa & Marchi's Engagement", 'LOCATION:La Riviera Restaurant & Bar\\, 170 Phillip St\\, Sydney NSW 2000',
+    'DESCRIPTION:Dress code: chic cocktail attire. 50m from Martin Place Station.', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  return Utilities.newBlob(ics, 'text/calendar', 'salwa-marchi-engagement.ics');
+}
+
+/** The email a guest gets after replying: the card, their reply, and one-tap links for the night. */
+function confirmationEmail(guests, song, slug) {
   const coming = guests.filter(g => g.attending);
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  const line = g => g.name + ': ' + (g.attending ? 'coming' + [g.dietary !== 'None' ? g.dietary.toLowerCase() : '', g.allergies ? 'allergic to ' + g.allergies : ''].filter(Boolean).map(x => ', ' + x).join('') : 'can\'t make it');
-  const lines = guests.map(line).concat(song ? ['Song request: ' + song] : []);
-  const details = [
-    'Saturday 23 January 2027, 7pm',
-    'La Riviera Restaurant & Bar, 170 Phillip St, Sydney NSW 2000 (50m from Martin Place Station)',
-    'Dress code: chic cocktail attire. White and ivory are reserved for the bride-to-be.',
-    'Map: https://www.google.com/maps/search/?api=1&query=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000',
-  ];
+  const first = n => String(n).split(/\s+/)[0];
+  const names = guests.map(g => first(g.name));
+  const hello = names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : names[0];
+  const needs = g => [g.dietary !== 'None' ? g.dietary.toLowerCase() : '', g.allergies ? 'allergic to ' + g.allergies : ''].filter(Boolean).join(', ');
+  const lines = guests.map(g => g.name + ': ' + (g.attending ? 'coming' + (needs(g) ? ' (' + needs(g) + ')' : '') : "can't make it"))
+    .concat(song ? ['Song request: ' + song] : []);
+  const site = siteAddress(), invitation = site + '/' + slug, owner = Session.getEffectiveUser().getEmail();
+  const actions = (coming.length ? [['Add to calendar', EVENT.calendar], ['Get directions', EVENT.map]] : [])
+    .concat([['Open your invitation', invitation]])
+    .concat(owner ? [['Message Salwa & Marchi', 'mailto:' + owner + '?subject=' + encodeURIComponent('Our RSVP (' + hello + ')')]] : []);
+
   const subject = coming.length ? 'See you on 23 January | Salwa & Marchi' : 'Thank you for letting us know | Salwa & Marchi';
-  const opening = coming.length ? 'Thank you for your RSVP. We can\'t wait to celebrate with you.' : 'Thank you for letting us know. We\'ll miss you, and we\'ll be thinking of you on the night.';
-  const body = [opening, '', 'Your reply', ...lines, ''].concat(coming.length ? ['The evening', ...details, ''] : []).concat(['Need to change something? Message Salwa or Marchi.', '', 'With love,', 'Salwa & Marchi']).join('\n');
-  const html = `<div style="font-family:Georgia,serif;color:#3a0000;max-width:520px;margin:auto;padding:24px;background:#faf6f0">
-    <p style="font-size:28px;font-style:italic;margin:0 0 16px">Salwa &amp; Marchi</p>
-    <p>${esc(opening)}</p>
-    <p style="margin-bottom:4px"><b>Your reply</b></p><p style="margin-top:0">${lines.map(esc).join('<br>')}</p>
-    ${coming.length ? `<p style="margin-bottom:4px"><b>The evening</b></p><p style="margin-top:0">${details.slice(0, 3).map(esc).join('<br>')}<br><a href="${details[3].slice(5)}" style="color:#6a0000">View on map</a></p>` : ''}
-    <p>Need to change something? Message Salwa or Marchi.</p>
-    <p>With love,<br>Salwa &amp; Marchi</p></div>`;
+  const heading = coming.length ? 'Thanks for your RSVP, ' + hello : 'We’ll miss you, ' + hello;
+  const intro = coming.length ? 'Hang on to this email: it has everything you need for the night.'
+    : 'Thank you for letting us know. We’ll be thinking of you on the night.';
+
+  const red = '#6a0000', ink = '#3a0000', paper = '#faf6f0', line = '#e8ddd0';
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:${paper}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper}"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:6px;overflow:hidden;font-family:Georgia,'Times New Roman',serif;color:${ink}">
+  <tr><td style="padding:28px 28px 18px;text-align:center">
+    <div style="font-size:30px;font-style:italic;color:${red};line-height:1.2">${esc(EVENT.title)}</div>
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;margin-top:10px;color:${ink}">
+      ${esc(EVENT.venue)}, <a href="${EVENT.map}" style="color:${red}">${esc(EVENT.address)}</a><br>${esc(EVENT.date)}</div>
+  </td></tr>
+  <tr><td><img src="${site}/img/email-hero.jpg" width="560" alt="Salwa and Marchi" style="display:block;width:100%;height:auto;border:0"></td></tr>
+  <tr><td style="padding:30px 28px 6px;text-align:center">
+    <div style="font-size:26px;line-height:1.25;color:${ink}">${esc(heading)}</div>
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;margin-top:10px">${esc(intro)}</div>
+  </td></tr>
+  <tr><td style="padding:18px 28px">
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a5a5a;margin-bottom:8px">Your reply</div>
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7">${lines.map(esc).join('<br>')}</div>
+  </td></tr>
+  <tr><td style="padding:6px 28px 8px">
+    ${actions.map(([label, href]) => `<a href="${href}" style="display:block;padding:16px 4px;border-top:1px solid ${line};font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:${red};text-decoration:none">${esc(label)} &rsaquo;</a>`).join('')}
+    <div style="border-top:1px solid ${line}"></div>
+  </td></tr>
+  ${coming.length ? `<tr><td style="padding:14px 28px 6px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7">
+    <b>When</b><br>${esc(EVENT.date)}<br><br>
+    <b>Where</b><br>${esc(EVENT.venue)}<br>${esc(EVENT.address)}<br>${esc(EVENT.transport)}<br><br>
+    <b>Dress code</b><br>${esc(EVENT.dress)}
+  </td></tr>` : ''}
+  <tr><td style="padding:22px 28px 30px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6">
+    Need to change something? Just reply to this email.<br><br>
+    <span style="font-family:Georgia,serif;font-style:italic;font-size:22px;color:${red}">With love, Salwa &amp; Marchi</span>
+  </td></tr>
+</table></td></tr></table></body></html>`;
+
+  const text = [heading, intro, '', 'Your reply', ...lines, '']
+    .concat(coming.length ? ['When: ' + EVENT.date, 'Where: ' + EVENT.venue + ', ' + EVENT.address + ' (' + EVENT.transport + ')', 'Dress code: ' + EVENT.dress, 'Add to calendar: ' + EVENT.calendar, 'Directions: ' + EVENT.map, ''] : [])
+    .concat(['Your invitation: ' + invitation, '', 'Need to change something? Just reply to this email.', '', 'With love,', 'Salwa & Marchi']).join('\n');
+  return { subject, html, text, attachCalendar: coming.length > 0 };
+}
+
+function sendConfirmation(to, guests, song, slug) {
   try {
-    MailApp.sendEmail({ to, subject, body, htmlBody: html, name: 'Salwa & Marchi' });
+    const m = confirmationEmail(guests, song, slug);
+    MailApp.sendEmail({ to, subject: m.subject, body: m.text, htmlBody: m.html, name: 'Salwa & Marchi', attachments: m.attachCalendar ? [calendarFile()] : [] });
   } catch (err) {
     // A failed email never fails the RSVP itself; it is already saved.
   }
