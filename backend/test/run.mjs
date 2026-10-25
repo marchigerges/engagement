@@ -58,8 +58,9 @@ const ctx = {
   Date: FakeDate, JSON, String, Array, Object, Math, console,
   SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] || null, insertSheet: n => (add(n, []), sheets[n]) }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
-  Utilities: { formatDate: d => d.toISOString().slice(0, 16).replace('T', ' ') },
+  Utilities: { formatDate: d => d.toISOString().slice(0, 16).replace('T', ' '), newBlob: (data, type, name) => ({ data, type, name }) },
   MailApp: { sendEmail: m => sent.push(m) },
+  Session: { getEffectiveUser: () => ({ getEmail: () => 'hosts@example.com' }) },
   ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType: () => ({ body: s }) }) },
 };
 vm.createContext(ctx);
@@ -124,7 +125,11 @@ assert.equal(r.invite.rsvp.guests[0].allergies, 'Peanuts'); assert.equal(r.invit
 assert.equal(r.invite.rsvp.song, 'September, Earth Wind & Fire');
 assert.equal(sent.length, 1); assert.equal(sent[0].to, 'jordan@example.com');
 log('confirmation email', { subject: sent[0].subject, body: sent[0].body });
-assert.match(sent[0].body, /Jordan Testguest: coming, vegetarian, allergic to Peanuts/); assert.match(sent[0].body, /La Riviera/);
+assert.match(sent[0].body, /Jordan Testguest: coming \(vegetarian, allergic to Peanuts\)/); assert.match(sent[0].body, /La Riviera/);
+assert.match(sent[0].htmlBody, /Thanks for your RSVP, Jordan &amp; Sam/);
+assert.match(sent[0].htmlBody, /https:\/\/salwa-and-marchi.com\/jordan-testguest/, 'their own invitation link');
+assert.match(sent[0].htmlBody, /mailto:hosts@example.com/); assert.equal(sent[0].attachments[0].name, 'salwa-marchi-engagement.ics');
+fs.writeFileSync(new URL('./email-preview.html', import.meta.url), sent[0].htmlBody);
 
 r = post({ slug: jordan, guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
 log('POST again (locked)', r); assert.equal(r.error, 'already_replied'); assert.equal(r.invite.rsvp.guests[0].attending, true);
