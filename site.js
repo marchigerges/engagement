@@ -37,9 +37,13 @@
   function readSlug() {
     const fromHash = decodeURIComponent(location.hash.replace(/^#/, ''));
     if (fromHash) return fromHash.toLowerCase();
-    const parts = location.pathname.split('/').filter(p => p && p !== 'index.html');
-    if (location.hostname.endsWith('github.io')) parts.shift(); // project site lives under /engagement/
-    return (parts[0] || '').toLowerCase();
+    // The site may live in a folder (marchilino.com/engagement/) or at a domain's root: whatever comes
+    // after the folder this script was loaded from is the guest's link name.
+    const script = document.querySelector('script[src$="site.js"]');
+    const base = script ? new URL('.', script.src).pathname : '/';
+    const rest = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : '';
+    const parts = rest.split('/').filter(p => p && p !== 'index.html');
+    return decodeURIComponent(parts[0] || '').toLowerCase();
   }
   addEventListener('hashchange', () => location.reload());
 

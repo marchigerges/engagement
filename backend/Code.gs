@@ -225,7 +225,7 @@ function addMissingSlugs() {
 
 /* ---------- Links and the chase-up list (Invitation menu in the Sheet) ---------- */
 
-const DEFAULT_SITE = 'https://marchigerges.github.io/engagement';
+const DEFAULT_SITE = 'https://marchilino.com/engagement';
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Invitation')
