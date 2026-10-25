@@ -2,7 +2,8 @@
  * Engagement invite backend. Bound to the "Engagement Party Guest List" Sheet.
  *
  * GET  ?slug=x                -> { ok, invite: { guests, rsvp, open, rsvpBy, dietary } } or { ok: false, error: 'not_found' }
- * POST text/plain JSON { slug, guests: [{ name, attending, dietary, allergies }], song, notes }
+ * POST text/plain JSON { slug, guests: [{ name, attending, dietary, allergies }], song, notes, email, phone }
+ *      Emails a confirmation to `email` (from the account that deployed the script) when one is given.
  *                             -> { ok, invite }
  *
  * Invites tab: one row per invite (Code, Guest 1..6). The script writes only "Personal link" and "Replied".
@@ -17,7 +18,7 @@ const TZ = 'Australia/Sydney';
 const RSVP_BY = new Date('2026-12-31T23:59:59+11:00');
 const MAX_GUESTS = 6;
 const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Pescatarian', 'Gluten free', 'Dairy free', 'Halal', 'Other'];
-const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song'];
+const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Phone'];
 // Guest List has two side-by-side tables; columns are 1-based.
 const GUEST_LIST_SIDES = [{ name: 2, rsvp: 3, allergies: 4 }, { name: 8, rsvp: 9, allergies: 10 }];
 const GUEST_LIST_FIRST_ROW = 3;
@@ -43,8 +44,13 @@ function doPost(e) {
       const guests = cleanGuests(body.guests, invite.guests);
       if (!guests) return { ok: false, error: 'invalid' };
       const notes = String(body.notes || '').slice(0, 500);
-      const song = String(body.song || '').trim().slice(0, 120);
-      saveResponse(invite, guests, notes, song);
+      const anyoneComing = guests.some(g => g.attending);
+      const song = anyoneComing ? String(body.song || '').trim().slice(0, 120) : ''; // no song requests from a declined invitation
+      const email = String(body.email || '').trim().slice(0, 120);
+      const phone = String(body.phone || '').trim().slice(0, 20);
+      const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
+      saveResponse(invite, guests, notes, song, validEmail, phone);
+      if (validEmail) sendConfirmation(validEmail, guests, song);
       return { ok: true, invite: publicInvite(findInvite(body.slug)) };
     } finally {
       lock.releaseLock();
@@ -92,8 +98,9 @@ function responsesSheet() {
     s = SpreadsheetApp.getActive().insertSheet('Responses');
     s.setFrozenRows(1);
   }
-  // Rewrites the header row so a tab made by an older version gains any new columns.
-  s.getRange(1, 1, 1, RESPONSE_HEADERS.length).setValues([RESPONSE_HEADERS]);
+  // A tab made by an older version gains any new columns.
+  const header = s.getRange(1, 1, 1, RESPONSE_HEADERS.length).getValues()[0];
+  if (header.join('|') !== RESPONSE_HEADERS.join('|')) s.getRange(1, 1, 1, RESPONSE_HEADERS.length).setValues([RESPONSE_HEADERS]);
   return s;
 }
 
@@ -110,7 +117,6 @@ function readResponses() {
 function findInvite(slug) {
   slug = String(slug || '').trim().toLowerCase();
   if (!slug) return null;
-  addMissingSlugs();
   const responses = readResponses();
   const invite = readInvites().find(i => responses[i.code] && responses[i.code].slug === slug);
   if (!invite) return null;
@@ -124,7 +130,7 @@ function publicInvite(invite) {
   if (r.status) {
     let detail = {};
     try { detail = JSON.parse(r.detail || '{}'); } catch (err) {}
-    rsvp = { guests: detail.guests || [], song: detail.song || '', notes: r.notes || '', submitted: r.submitted ? new Date(r.submitted).toISOString() : null };
+    rsvp = { guests: detail.guests || [], song: detail.song || '', email: detail.email || '', notes: r.notes || '', submitted: r.submitted ? new Date(r.submitted).toISOString() : null };
   }
   return { guests: invite.guests, rsvp, open: new Date() <= RSVP_BY, rsvpBy: RSVP_BY.toISOString(), dietary: DIETARY };
 }
@@ -144,14 +150,14 @@ function cleanGuests(input, names) {
   return out;
 }
 
-function saveResponse(invite, guests, notes, song) {
+function saveResponse(invite, guests, notes, song, email, phone) {
   const attending = guests.filter(g => g.attending);
   const status = attending.length === 0 ? 'Declined' : attending.length === guests.length ? 'Accepted' : 'Partial';
   const dietary = attending.filter(g => g.dietary !== 'None').map(g => g.name + ': ' + g.dietary).join('; ');
   const allergies = attending.filter(g => g.allergies).map(g => g.name + ': ' + g.allergies).join('; ');
   const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
-  responsesSheet().getRange(invite.response.row, 3, 1, 9).setValues([[
-    invite.guests.join(', '), status, attending.length, dietary, notes, now, JSON.stringify({ guests, song }), allergies, song
+  responsesSheet().getRange(invite.response.row, 3, 1, 11).setValues([[
+    invite.guests.join(', '), status, attending.length, dietary, notes, now, JSON.stringify({ guests, song, email }), allergies, song, email || '', phone || ''
   ]]);
 
   const inv = sheet('Invites');
@@ -159,6 +165,36 @@ function saveResponse(invite, guests, notes, song) {
   if (h['Replied'] !== undefined) inv.getRange(invite.row, h['Replied'] + 1).setValue(status + ' ' + now);
 
   markGuestList(guests);
+}
+
+/* ---------- Confirmation email ---------- */
+
+function sendConfirmation(to, guests, song) {
+  const coming = guests.filter(g => g.attending);
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const line = g => g.name + ': ' + (g.attending ? 'coming' + [g.dietary !== 'None' ? g.dietary.toLowerCase() : '', g.allergies ? 'allergic to ' + g.allergies : ''].filter(Boolean).map(x => ', ' + x).join('') : 'can\'t make it');
+  const lines = guests.map(line).concat(song ? ['Song request: ' + song] : []);
+  const details = [
+    'Saturday 23 January 2027, 7pm',
+    'La Riviera Restaurant & Bar, 170 Phillip St, Sydney NSW 2000 (50m from Martin Place Station)',
+    'Dress code: chic cocktail attire. White and ivory are reserved for the bride-to-be.',
+    'Map: https://www.google.com/maps/search/?api=1&query=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000',
+  ];
+  const subject = coming.length ? 'See you on 23 January | Salwa & Marchi' : 'Thank you for letting us know | Salwa & Marchi';
+  const opening = coming.length ? 'Thank you for your RSVP. We can\'t wait to celebrate with you.' : 'Thank you for letting us know. We\'ll miss you, and we\'ll be thinking of you on the night.';
+  const body = [opening, '', 'Your reply', ...lines, ''].concat(coming.length ? ['The evening', ...details, ''] : []).concat(['Need to change something? Message Salwa or Marchi.', '', 'With love,', 'Salwa & Marchi']).join('\n');
+  const html = `<div style="font-family:Georgia,serif;color:#3a0000;max-width:520px;margin:auto;padding:24px;background:#faf6f0">
+    <p style="font-size:28px;font-style:italic;margin:0 0 16px">Salwa &amp; Marchi</p>
+    <p>${esc(opening)}</p>
+    <p style="margin-bottom:4px"><b>Your reply</b></p><p style="margin-top:0">${lines.map(esc).join('<br>')}</p>
+    ${coming.length ? `<p style="margin-bottom:4px"><b>The evening</b></p><p style="margin-top:0">${details.slice(0, 3).map(esc).join('<br>')}<br><a href="${details[3].slice(5)}" style="color:#6a0000">View on map</a></p>` : ''}
+    <p>Need to change something? Message Salwa or Marchi.</p>
+    <p>With love,<br>Salwa &amp; Marchi</p></div>`;
+  try {
+    MailApp.sendEmail({ to, subject, body, htmlBody: html, name: 'Salwa & Marchi' });
+  } catch (err) {
+    // A failed email never fails the RSVP itself; it is already saved.
+  }
 }
 
 function markGuestList(guests) {

@@ -53,11 +53,13 @@ let now = new Date('2026-11-01T10:00:00+11:00');
 const RealDate = Date;
 class FakeDate extends RealDate { constructor(...a) { super(...(a.length ? a : [now])); } static now() { return now.getTime(); } }
 
+const sent = [];
 const ctx = {
   Date: FakeDate, JSON, String, Array, Object, Math, console,
   SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] || null, insertSheet: n => (add(n, []), sheets[n]) }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
   Utilities: { formatDate: d => d.toISOString().slice(0, 16).replace('T', ' ') },
+  MailApp: { sendEmail: m => sent.push(m) },
   ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType: () => ({ body: s }) }) },
 };
 vm.createContext(ctx);
@@ -112,7 +114,7 @@ log('POST renamed plus-one', r); assert.equal(r.error, 'invalid');
 r = post({ slug: 'nobody', guests: [] }); log('POST unknown slug', r); assert.equal(r.error, 'not_found');
 
 // Jordan accepts with dietary, Sam declines
-r = post({ slug: jordan, notes: 'Looking forward to it', song: 'September, Earth Wind & Fire', guests: [
+r = post({ slug: jordan, notes: 'Looking forward to it', song: 'September, Earth Wind & Fire', email: 'jordan@example.com', phone: '0400 000 000', guests: [
   { name: 'Jordan Testguest', attending: true, dietary: 'Vegetarian', allergies: 'Peanuts' },
   { name: 'Sam Plusone', attending: false, dietary: 'Vegan', allergies: 'Shellfish' },
 ] });
@@ -120,6 +122,9 @@ log('POST Jordan yes (veg, peanuts) + Sam no, with a song', r);
 assert.equal(r.ok, true); assert.equal(r.invite.rsvp.guests[1].dietary, 'None');
 assert.equal(r.invite.rsvp.guests[0].allergies, 'Peanuts'); assert.equal(r.invite.rsvp.guests[1].allergies, '', 'not attending: allergies dropped');
 assert.equal(r.invite.rsvp.song, 'September, Earth Wind & Fire');
+assert.equal(sent.length, 1); assert.equal(sent[0].to, 'jordan@example.com');
+log('confirmation email', { subject: sent[0].subject, body: sent[0].body });
+assert.match(sent[0].body, /Jordan Testguest: coming, vegetarian, allergic to Peanuts/); assert.match(sent[0].body, /La Riviera/);
 
 r = post({ slug: jordan, guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
 log('POST again (locked)', r); assert.equal(r.error, 'already_replied'); assert.equal(r.invite.rsvp.guests[0].attending, true);
@@ -128,7 +133,8 @@ r = get({ slug: jordan }); log('GET after reply shows locked RSVP', r.invite.rsv
 
 // Alex: bogus dietary is coerced, then RSVP closes
 alex = 'alex-the-great';
-r = post({ slug: alex, guests: [{ name: 'Alex Testguest', attending: true, dietary: '<script>' }] });
+r = post({ slug: alex, email: 'not-an-email', guests: [{ name: 'Alex Testguest', attending: true, dietary: '<script>' }] });
+assert.equal(sent.length, 1, 'no email to an invalid address');
 log('POST Alex yes, bogus dietary', r.invite.rsvp); assert.equal(r.invite.rsvp.guests[0].dietary, 'None');
 
 now = new Date('2027-01-01T00:00:01+11:00');
@@ -139,10 +145,11 @@ r = get({ slug: slugOf('h3wetsfTbX') }); assert.equal(r.invite.open, false);
 // Sheet side effects
 const respRow = c => responses.find(x => x[0] === c);
 log('Responses row, Jordan', respRow('TEST000002').filter((_, i) => i !== 8));
+assert.equal(respRow('TEST000002')[11], 'jordan@example.com'); assert.equal(respRow('TEST000002')[12], '0400 000 000');
 assert.equal(respRow('TEST000002')[3], 'Partial');
 assert.equal(respRow('TEST000002')[9], 'Jordan Testguest: Peanuts');
 assert.equal(respRow('TEST000002')[10], 'September, Earth Wind & Fire');
-assert.deepEqual(responses[0], ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song']);
+assert.deepEqual(responses[0], ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Phone']);
 const invRow = c => sheets.Invites.data.find(x => x[0] === c);
 log('Invites "Replied", Jordan', invRow('TEST000002')[12]);
 assert.match(invRow('TEST000002')[12], /^Partial /);
@@ -156,8 +163,10 @@ r = get({ slug: jordan }); log('after clearReply', r.invite.rsvp); assert.equal(
 assert.equal(respRow('TEST000002')[1], jordan, 'link kept');
 assert.equal(invRow('TEST000002')[12], '', 'Replied cleared');
 now = new Date('2026-11-20T10:00:00+11:00');
-r = post({ slug: jordan, guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
+r = post({ slug: jordan, song: 'Should be dropped', email: 'jordan@example.com', guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
 assert.equal(r.ok, true); assert.equal(respRow('TEST000002')[3], 'Declined');
+assert.equal(r.invite.rsvp.song, '', 'a declined invitation cannot request a song');
+assert.match(sent[sent.length - 1].subject, /Thank you for letting us know/); assert.doesNotMatch(sent[sent.length - 1].body, /La Riviera/);
 
 // Removing an invitation: both rows go, the link stops working
 ctx.removeInvitation('TEST000001');

@@ -20,32 +20,53 @@
     return (await fetch(API + '?' + new URLSearchParams({ slug }))).json();
   }
 
-  async function sendReply(slug, guests, song, notes) {
+  async function sendReply(slug, guests, song, notes, email, phone) {
     if (!API) {
       await wait(700);
       if (mockReplies[slug]) return { ok: false, error: 'already_replied', invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
-      mockReplies[slug] = { guests, song, notes };
+      mockReplies[slug] = { guests, song, notes, email };
       return { ok: true, invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
     }
     // text/plain keeps this a simple request, so the browser skips the CORS preflight Apps Script can't answer.
-    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, song, notes }) });
+    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, song, notes, email, phone }) });
     return res.json();
   }
 
-  /* ---------- Who is this for: /<slug> on the live site, #<slug> in previews. ---------- */
+  /* ---------- Who is this for: /<slug> on the live site, #<slug> only in previews without a path. ---------- */
 
-  function readSlug() {
-    const fromHash = decodeURIComponent(location.hash.replace(/^#/, ''));
-    if (fromHash) return fromHash.toLowerCase();
-    // The site may live in a folder (marchilino.com/engagement/) or at a domain's root: whatever comes
-    // after the folder this script was loaded from is the guest's link name.
+  function slugFromPath() {
+    // The site may live in a folder or at a domain's root: whatever comes after the folder this
+    // script was loaded from is the guest's link name.
     const script = document.querySelector('script[src$="site.js"]');
     const base = script ? new URL('.', script.src).pathname : '/';
     const rest = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : '';
     const parts = rest.split('/').filter(p => p && p !== 'index.html');
     return decodeURIComponent(parts[0] || '').toLowerCase();
   }
-  addEventListener('hashchange', () => location.reload());
+  const pathSlug = slugFromPath();
+  function readSlug() {
+    if (pathSlug) return pathSlug; // a #fragment on a real link never changes whose invitation it is
+    return decodeURIComponent(location.hash.replace(/^#/, '')).toLowerCase();
+  }
+  if (!pathSlug) addEventListener('hashchange', () => location.reload());
+
+  /* ---------- Names, instantly: guests.js carries every invitation's names, each encrypted with its own
+     link name, so the greeting needs no round trip to Google. The Sheet stays the source of truth. ---------- */
+
+  const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  async function localNames(slug) {
+    try {
+      const table = window.GUESTS, subtle = window.crypto && crypto.subtle;
+      if (!table || !subtle || !slug) return null;
+      const enc = new TextEncoder();
+      const id = hex(await subtle.digest('SHA-256', enc.encode('id:' + slug))).slice(0, 16);
+      if (!table[id]) return null;
+      const raw = Uint8Array.from(atob(table[id]), c => c.charCodeAt(0));
+      const key = await subtle.importKey('raw', await subtle.digest('SHA-256', enc.encode('key:' + slug)), 'AES-GCM', false, ['decrypt']);
+      const plain = await subtle.decrypt({ name: 'AES-GCM', iv: raw.slice(0, 12) }, key, raw.slice(12));
+      return JSON.parse(new TextDecoder().decode(plain));
+    } catch (err) { return null; }
+  }
 
   const firstName = n => (/'s\b/.test(n) ? n : n.split(/\s+/)[0]);
   const joinNames = list => (list.length > 1 ? list.slice(0, -1).join(', ') + ' & ' + list[list.length - 1] : list[0]);
@@ -59,6 +80,9 @@
   }
 
   // Apps Script can take a few seconds to wake, so the reply card says it is loading, and offers a retry if it fails.
+  const greet = names => { $('greeting').textContent = 'Dear ' + joinNames(names.map(firstName)); };
+  let greeted = false;
+
   function load() {
     $('rsvpStatus').hidden = false;
     $('rsvpStatusText').textContent = 'Loading your invitation';
@@ -66,8 +90,8 @@
     getInvite(slug).then(r => {
       if (!r.ok) return lock();
       invite = r.invite;
-      $('greeting').textContent = 'Dear ' + joinNames(invite.guests.map(firstName));
-      if (!still) gsap.fromTo('#greeting', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.4, ease: 'power3.out' });
+      if (!greeted || $('greeting').textContent !== 'Dear ' + joinNames(invite.guests.map(firstName))) greet(invite.guests);
+      greeted = true;
       $('rsvpStatus').hidden = true;
       renderRsvp();
     }).catch(() => {
@@ -79,7 +103,10 @@
   $('rsvpRetry').addEventListener('click', load);
 
   if (!slug) lock();
-  else load();
+  else {
+    localNames(slug).then(names => { if (names && !greeted) { greet(names); greeted = true; } });
+    load();
+  }
 
   /* ---------- Countdown ---------- */
 
@@ -130,10 +157,9 @@
   }
   new IntersectionObserver(([e]) => { rsvpInView = e.isIntersecting; floatButton(); }, { threshold: .15 }).observe($('rsvp'));
   addEventListener('scroll', floatButton, { passive: true });
-  float.addEventListener('click', e => {
-    if (!window.__lenis) return;
-    e.preventDefault();
-    window.__lenis.scrollTo('#rsvp', { offset: -24, duration: 1.6 });
+  float.addEventListener('click', () => {
+    if (window.__lenis) window.__lenis.scrollTo('#rsvp', { offset: -24, duration: 1.6 });
+    else $('rsvp').scrollIntoView({ behavior: still ? 'auto' : 'smooth' });
   });
 
   const remeasure = () => { if (window.ScrollTrigger) requestAnimationFrame(() => ScrollTrigger.refresh()); };
@@ -148,8 +174,8 @@
       const row = document.createElement('div');
       row.className = 'guest';
       row.innerHTML = `
-        <p class="name">${firstName(name).replace(/[<>&]/g, '')}</p>
-        <div class="choice" role="group" aria-label="Is ${firstName(name).replace(/[<>&"]/g, '')} coming?">
+        <p class="name">${name.replace(/[<>&]/g, '')}</p>
+        <div class="choice" role="group" aria-label="Is ${name.replace(/[<>&"]/g, '')} coming?">
           <button type="button" aria-pressed="false" data-v="yes">Coming</button>
           <button type="button" aria-pressed="false" data-v="no">Can’t make it</button>
         </div>
@@ -171,11 +197,21 @@
         remeasure();
         $('send').disabled = answers.some(a => a.attending === null);
         $('formNote').textContent = '';
+        fitToAnswers();
       });
       row.querySelector('select').addEventListener('change', e => { answers[i].dietary = e.target.value; });
       row.querySelector('input').addEventListener('input', e => { answers[i].allergies = e.target.value; });
       box.appendChild(row);
     });
+    remeasure();
+  }
+
+  // When nobody on the invitation is coming there is no song to request, and the note becomes a message.
+  function fitToAnswers() {
+    const answered = answers.every(a => a.attending !== null);
+    const anyoneComing = answers.some(a => a.attending);
+    $('songField').hidden = answered && !anyoneComing;
+    $('notesLabel').textContent = answered && !anyoneComing ? 'Leave Salwa & Marchi a message' : 'Anything else we should know?';
     remeasure();
   }
 
@@ -188,10 +224,18 @@
     $('formNote').textContent = '';
     const guests = answers.map(a => ({ name: a.name, attending: a.attending, dietary: a.attending ? a.dietary : 'None', allergies: a.attending ? a.allergies.trim() : '' }));
     let r;
-    try { r = await sendReply(slug, guests, $('song').value.trim(), $('notes').value.trim()); } catch (err) { r = { ok: false, error: 'network' }; }
+    const email = $('email').value.trim(), phone = $('phone').value.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      send.disabled = false; send.textContent = 'Send RSVP';
+      $('formNote').textContent = 'Check your email address, or leave it blank.';
+      $('email').focus();
+      return;
+    }
+    const song = guests.some(g => g.attending) ? $('song').value.trim() : '';
+    try { r = await sendReply(slug, guests, song, $('notes').value.trim(), email, phone); } catch (err) { r = { ok: false, error: 'network' }; }
     if (r.ok || r.error === 'already_replied') return showSent(r.invite.rsvp, true);
     send.disabled = false;
-    send.textContent = 'Send reply';
+    send.textContent = 'Send RSVP';
     $('formNote').textContent = r.error === 'closed'
       ? 'Replies have closed. Please message Salwa or Marchi.'
       : 'Your reply didn’t send. Check your connection and try again.';
@@ -206,9 +250,9 @@
     $('rsvpTitle').textContent = coming.length ? 'See you there' : 'We’ll miss you';
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
     const needs = g => [g.dietary && g.dietary !== 'None' ? g.dietary.toLowerCase() : '', g.allergies ? 'allergic to ' + esc(g.allergies) : ''].filter(Boolean).join(', ');
-    $('sentList').innerHTML = rsvp.guests.map(g => `<li>${esc(firstName(g.name))}: ${g.attending ? 'coming' + (needs(g) ? ', ' + needs(g) : '') : 'can’t make it'}</li>`).join('')
+    $('sentList').innerHTML = rsvp.guests.map(g => `<li>${esc(g.name)}: ${g.attending ? 'coming' + (needs(g) ? ', ' + needs(g) : '') : 'can’t make it'}</li>`).join('')
       + (rsvp.song ? `<li>Song request: ${esc(rsvp.song)}</li>` : '');
-    $('sentLine').textContent = 'Thank you for letting us know. Need to change something? Message Salwa or Marchi.';
+    $('sentLine').innerHTML = (rsvp.email ? 'A confirmation is on its way to <span class="as-typed">' + esc(rsvp.email) + '</span>. ' : 'Thank you for letting us know. ') + 'Need to change something? Message Salwa or Marchi.';
     $('sent').hidden = false;
     remeasure();
     if (animate && !still) gsap.from('#sent > *', { opacity: 0, y: 20, duration: 1, stagger: .1, ease: 'power3.out' });
