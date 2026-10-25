@@ -154,7 +154,8 @@ assert.equal(respRow('TEST000002')[11], 'jordan@example.com'); assert.equal(resp
 assert.equal(respRow('TEST000002')[3], 'Partial');
 assert.equal(respRow('TEST000002')[9], 'Jordan Testguest: Peanuts');
 assert.equal(respRow('TEST000002')[10], 'September, Earth Wind & Fire');
-assert.deepEqual(responses[0], ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Phone']);
+assert.deepEqual(responses[0], ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Phone', 'Email sent']);
+assert.match(respRow('TEST000002')[13], /^Sent /);
 const invRow = c => sheets.Invites.data.find(x => x[0] === c);
 log('Invites "Replied", Jordan', invRow('TEST000002')[12]);
 assert.match(invRow('TEST000002')[12], /^Partial /);
@@ -171,7 +172,14 @@ now = new Date('2026-11-20T10:00:00+11:00');
 r = post({ slug: jordan, song: 'Should be dropped', email: 'jordan@example.com', guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
 assert.equal(r.ok, true); assert.equal(respRow('TEST000002')[3], 'Declined');
 assert.equal(r.invite.rsvp.song, '', 'a declined invitation cannot request a song');
-assert.match(sent[sent.length - 1].subject, /Thank you for letting us know/); assert.doesNotMatch(sent[sent.length - 1].body, /La Riviera/);
+assert.match(sent[sent.length - 1].subject, /Thank you for letting us know/);
+{ // a failed send is recorded, and the RSVP still saves
+  const real = ctx.MailApp.sendEmail; ctx.MailApp.sendEmail = () => { throw new Error('Authorization is required'); };
+  ctx.clearReply('TEST000002');
+  const f = post({ slug: jordan, email: 'jordan@example.com', guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
+  assert.equal(f.ok, true); assert.equal(respRow('TEST000002')[13], 'Failed: Authorization is required');
+  ctx.MailApp.sendEmail = real;
+} assert.doesNotMatch(sent[sent.length - 1].body, /La Riviera/);
 
 // Removing an invitation: both rows go, the link stops working
 ctx.removeInvitation('TEST000001');
