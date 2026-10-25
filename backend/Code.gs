@@ -18,7 +18,7 @@ const TZ = 'Australia/Sydney';
 const RSVP_BY = new Date('2026-12-31T23:59:59+11:00');
 const MAX_GUESTS = 6;
 const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Pescatarian', 'Gluten free', 'Dairy free', 'Halal', 'Other'];
-const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Phone'];
+const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Phone', 'Email sent'];
 // Guest List has two side-by-side tables; columns are 1-based.
 const GUEST_LIST_SIDES = [{ name: 2, rsvp: 3, allergies: 4 }, { name: 8, rsvp: 9, allergies: 10 }];
 const GUEST_LIST_FIRST_ROW = 3;
@@ -50,7 +50,10 @@ function doPost(e) {
       const phone = String(body.phone || '').trim().slice(0, 20);
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
       saveResponse(invite, guests, notes, song, validEmail, phone);
-      if (validEmail) sendConfirmation(validEmail, guests, song, invite.response.slug);
+      if (validEmail) {
+        const sent = sendConfirmation(validEmail, guests, song, invite.response.slug);
+        responsesSheet().getRange(invite.response.row, RESPONSE_HEADERS.indexOf('Email sent') + 1).setValue(sent);
+      }
       return { ok: true, invite: publicInvite(findInvite(body.slug)) };
     } finally {
       lock.releaseLock();
@@ -247,13 +250,22 @@ function confirmationEmail(guests, song, slug) {
   return { subject, html, text, attachCalendar: coming.length > 0 };
 }
 
+/** Returns what happened, for the "Email sent" column. A failed email never fails the RSVP itself; it is already saved. */
 function sendConfirmation(to, guests, song, slug) {
   try {
     const m = confirmationEmail(guests, song, slug);
     MailApp.sendEmail({ to, subject: m.subject, body: m.text, htmlBody: m.html, name: 'Salwa & Marchi', attachments: m.attachCalendar ? [calendarFile()] : [] });
+    return 'Sent ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
   } catch (err) {
-    // A failed email never fails the RSVP itself; it is already saved.
+    return 'Failed: ' + String(err && err.message || err).slice(0, 200);
   }
+}
+
+/** Invitation menu: emails you a sample confirmation. Running it also asks Google for the "send email" permission. */
+function sendTestEmail() {
+  const to = Session.getEffectiveUser().getEmail();
+  const result = sendConfirmation(to, [{ name: 'Test Guest', attending: true, dietary: 'None', allergies: '' }], 'Test song', 'test');
+  SpreadsheetApp.getUi().alert(result.indexOf('Sent') === 0 ? 'Test email sent to ' + to + '. Emails left today: ' + MailApp.getRemainingDailyQuota() : result);
 }
 
 function markGuestList(guests) {
@@ -326,6 +338,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Invitation')
     .addItem('Create links for new guests', 'syncSlugs')
     .addItem('Rebuild the To chase tab', 'setupChaseTab')
+    .addItem('Send me a test confirmation email', 'sendTestEmail')
     .addSeparator()
     .addItem('Clear the reply for the selected invitation', 'clearSelectedReply')
     .addItem('Remove the selected invitation', 'removeSelectedInvitation')
