@@ -74,9 +74,9 @@ log('Responses tab after addTestGuests (slugs)', responses.map(r => r.slice(0, 2
 const slugOf = code => responses.find(r => r[0] === code)[1];
 let alex = slugOf('TEST000001'); const jordan = slugOf('TEST000002');
 assert.equal(alex, 'alex-testguest');
-assert.equal(jordan, 'jordan-and-sam');
-assert.equal(slugOf('E9mqXIKdiW'), 'joseph-and-noura');
-assert.equal(slugOf('qje1H2qBb4'), 'abou-and-abou');
+assert.equal(jordan, 'jordan-testguest');
+assert.equal(slugOf('E9mqXIKdiW'), 'joseph-el-chami');
+assert.equal(slugOf('qje1H2qBb4'), 'abou-anis');
 assert.equal(new Set(responses.slice(1).map(r => r[1])).size, responses.length - 1, 'slugs are unique');
 
 // A row with names but no code gets one
@@ -87,8 +87,8 @@ assert.equal(responses.find(r => r[0] === autoCode)[1], 'noah-nocode');
 // Personal links and the chase-up tab
 const invRowOf = c => sheets.Invites.data.find(x => x[0] === c);
 log('Personal links', sheets.Invites.data.slice(1).map(r => r[9]));
-assert.equal(invRowOf('E9mqXIKdiW')[9], 'https://salwa-and-marchi.com/joseph-and-noura', 'site address from the sheet, trailing slash dropped');
-assert.equal(invRowOf('TEST000002')[9], 'https://salwa-and-marchi.com/jordan-and-sam');
+assert.equal(invRowOf('E9mqXIKdiW')[9], 'https://salwa-and-marchi.com/joseph-el-chami', 'site address from the sheet, trailing slash dropped');
+assert.equal(invRowOf('TEST000002')[9], 'https://salwa-and-marchi.com/jordan-testguest');
 const chase = sheets['To chase'].data;
 log('To chase formulas', [chase[0][0], chase[2][0]]);
 assert.match(chase[0][0], /COUNTIFS\(Invites!D2:D, "<>", Invites!M2:M, ""\)/);

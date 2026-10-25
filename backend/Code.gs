@@ -214,9 +214,7 @@ function addMissingSlugs() {
   const rows = [];
   readInvites().forEach(inv => {
     if (responses[inv.code]) return;
-    const first = n => slugify(n).split('-')[0];
-    const firsts = inv.guests.map(first);
-    const base = firsts.length === 1 ? slugify(inv.guests[0]) : firsts.slice(0, -1).join('-') + '-and-' + firsts[firsts.length - 1];
+    const base = slugify(inv.guests[0]); // the first person's full name, for a single or a shared invitation
     let slug = base, n = 2;
     while (taken[slug]) slug = base + '-' + n++;
     taken[slug] = true;
