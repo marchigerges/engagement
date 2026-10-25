@@ -261,9 +261,11 @@ function sendConfirmation(to, guests, song, slug) {
   }
 }
 
-/** Invitation menu: emails you a sample confirmation. Running it also asks Google for the "send email" permission. */
+const TEST_EMAIL = 'm.gergeshs@gmail.com';
+
+/** Invitation menu: emails TEST_EMAIL a sample confirmation. Running it also asks Google for the "send email" permission. */
 function sendTestEmail() {
-  const to = Session.getEffectiveUser().getEmail();
+  const to = TEST_EMAIL;
   const result = sendConfirmation(to, [{ name: 'Test Guest', attending: true, dietary: 'None', allergies: '' }], 'Test song', 'test');
   SpreadsheetApp.getUi().alert(result.indexOf('Sent') === 0 ? 'Test email sent to ' + to + '. Emails left today: ' + MailApp.getRemainingDailyQuota() : result);
 }
