@@ -263,7 +263,7 @@ function sendConfirmation(to, guests, song, slug) {
 
 const TEST_EMAIL = 'm.gergeshs@gmail.com';
 
-/** Invitation menu: emails TEST_EMAIL a sample confirmation. Running it also asks Google for the "send email" permission. */
+/** Run from the Apps Script editor: emails TEST_EMAIL a sample confirmation. Running it also asks Google for the "send email" permission. */
 function sendTestEmail() {
   const to = TEST_EMAIL;
   const result = sendConfirmation(to, [{ name: 'Test Guest', attending: true, dietary: 'None', allergies: '' }], 'Test song', 'test');
@@ -338,12 +338,10 @@ const DEFAULT_SITE = 'https://salwaxmarchi.com';
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Invitation')
-    .addItem('Create links for new guests', 'syncSlugs')
-    .addItem('Rebuild the To chase tab', 'setupChaseTab')
-    .addItem('Send me a test confirmation email', 'sendTestEmail')
+    .addItem('Make links', 'syncSlugs')
     .addSeparator()
-    .addItem('Clear the reply for the selected invitation', 'clearSelectedReply')
-    .addItem('Remove the selected invitation', 'removeSelectedInvitation')
+    .addItem('Reset reply', 'clearSelectedReply')
+    .addItem('Delete invitation', 'removeSelectedInvitation')
     .addToUi();
 }
 
@@ -365,7 +363,7 @@ function selectedInviteNames(code) {
 function clearSelectedReply() {
   const ui = SpreadsheetApp.getUi(), code = selectedCode();
   if (!code) return ui.alert('Click a cell in the invitation\'s row on the Invites or Responses tab first.');
-  const ok = ui.alert('Clear this reply?', selectedInviteNames(code) + ' will be able to reply again on the same link.', ui.ButtonSet.OK_CANCEL);
+  const ok = ui.alert('Reset reply?', selectedInviteNames(code) + ' can reply again on the same link.', ui.ButtonSet.OK_CANCEL);
   if (ok === ui.Button.OK) clearReply(code);
 }
 
@@ -373,7 +371,7 @@ function clearSelectedReply() {
 function removeSelectedInvitation() {
   const ui = SpreadsheetApp.getUi(), code = selectedCode();
   if (!code) return ui.alert('Click a cell in the invitation\'s row on the Invites or Responses tab first.');
-  const ok = ui.alert('Remove this invitation?', selectedInviteNames(code) + ' will be deleted, with any reply, and their link will stop working.', ui.ButtonSet.OK_CANCEL);
+  const ok = ui.alert('Delete invitation?', selectedInviteNames(code) + ' will be deleted and their link will stop working. This can\'t be undone.\n\nOnly want them to answer again? Cancel and use Reset reply.', ui.ButtonSet.OK_CANCEL);
   if (ok === ui.Button.OK) removeInvitation(code);
 }
 
