@@ -53,13 +53,14 @@ let now = new Date('2026-11-01T10:00:00+11:00');
 const RealDate = Date;
 class FakeDate extends RealDate { constructor(...a) { super(...(a.length ? a : [now])); } static now() { return now.getTime(); } }
 
-const sent = [];
+const sent = [], alerts = [];
+let quota = 100;
 const ctx = {
   Date: FakeDate, JSON, String, Array, Object, Math, console,
-  SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] || null, insertSheet: n => (add(n, []), sheets[n]) }) },
+  SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] || null, insertSheet: n => (add(n, []), sheets[n]) }), getUi: () => ({ alert: m => alerts.push(m) }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
   Utilities: { formatDate: d => d.toISOString().slice(0, 16).replace('T', ' '), newBlob: (data, type, name) => ({ data, type, name }) },
-  MailApp: { sendEmail: m => sent.push(m) },
+  MailApp: { sendEmail: m => sent.push(m), getRemainingDailyQuota: () => quota },
   Session: { getEffectiveUser: () => ({ getEmail: () => 'hosts@example.com' }) },
   ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType: () => ({ body: s }) }) },
 };
@@ -96,6 +97,15 @@ const chase = sheets['To chase'].data;
 log('To chase formulas', [chase[0][0], chase[2][0]]);
 assert.match(chase[0][0], /COUNTIFS\(Invites!D2:D, "<>", Invites!M2:M, ""\)/);
 assert.equal(chase[2][0], '=QUERY(Invites!A1:Z, "select B, C, D, E, F, J where D is not null and M is null order by B, C", 1)');
+{ // with a Backup column, held invitations are not chased
+  const head = sheets.Invites.data[0], saved = head.slice();
+  head.splice(13, 0, 'Backup');
+  ctx.setupChaseTab();
+  const c = sheets['To chase'].data;
+  assert.match(c[0][0], /Invites!M2:M, "", Invites!N2:N, "<>TRUE"\)/);
+  assert.match(c[2][0], /and M is null and \(N is null or N = false\) order by/);
+  sheets.Invites.data[0] = saved; ctx.setupChaseTab();
+}
 
 // Lookup
 let r = get({ slug: 'nobody' }); log('unknown slug', r); assert.equal(r.error, 'not_found');
@@ -179,6 +189,13 @@ assert.match(sent[sent.length - 1].subject, /Thank you for letting us know/);
   const f = post({ slug: jordan, email: 'jordan@example.com', guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
   assert.equal(f.ok, true); assert.equal(respRow('TEST000002')[12], 'Failed: Authorization is required');
   ctx.MailApp.sendEmail = real;
+  // Resend failed emails: none left today waits; with quota it sends and records it.
+  quota = 0; ctx.resendFailedEmails();
+  assert.match(alerts.pop(), /^0 confirmation emails sent\. 1 still waiting/); assert.match(respRow('TEST000002')[12], /^Failed/);
+  quota = 100; const before = sent.length; ctx.resendFailedEmails();
+  assert.equal(alerts.pop(), '1 confirmation email sent.'); assert.equal(sent.length, before + 1);
+  assert.equal(sent[sent.length - 1].to, 'jordan@example.com'); assert.match(respRow('TEST000002')[12], /^Sent /);
+  ctx.resendFailedEmails(); assert.equal(alerts.pop(), '0 confirmation emails sent.', 'already sent ones are not resent');
 } assert.doesNotMatch(sent[sent.length - 1].body, /La Riviera/);
 
 // Removing an invitation: both rows go, the link stops working

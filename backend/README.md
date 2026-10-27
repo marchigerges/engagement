@@ -13,7 +13,7 @@ Bound to the **Salwa & Marchi – Invitation Backend** Sheet: https://docs.googl
    - fills the **Personal link** column on Invites (`<Site address>/<link name>`),
    - adds a **To chase** tab listing every invite with no reply yet.
 4. **Deploy > New deployment > Web app**. Execute as: *Me*. Who has access: *Anyone*. Copy the `/exec` URL and put it in `window.INVITE_API` in `index.html`.
-5. Reload the Sheet: an **Invitation** menu appears. Use **Make links** after adding invites, or after changing the Site address cell on Invites (row 1).
+5. Reload the Sheet: an **Invitation** menu appears. Use **Make links** after adding invites, or after changing the Site address cell on Invites (row 1). **Resend failed emails** retries confirmations that hit Gmail's daily limit (about 100). Tick **Backup** on an Invites row to hold it back: it is left out of the To chase list and the Summary counts until you untick it.
 
 After editing `Code.gs` later, the GitHub Action below deploys it. Without it, paste the code and use **Deploy > Manage deployments > Edit > New version** so the URL stays the same.
 

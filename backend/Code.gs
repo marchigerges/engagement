@@ -262,6 +262,24 @@ function sendConfirmation(to, guests, song, slug) {
 
 const TEST_EMAIL = 'm.gergeshs@gmail.com';
 
+/** Invitation menu: retries every confirmation that failed (usually Gmail's daily limit of about 100). */
+function resendFailedEmails() {
+  const s = responsesSheet(), values = s.getDataRange().getValues();
+  const col = name => RESPONSE_HEADERS.indexOf(name);
+  let sent = 0, failed = 0;
+  for (let r = 1; r < values.length; r++) {
+    const row = values[r], email = String(row[col('Email')] || '').trim();
+    if (!email || !row[col('Status')] || !/^Failed/.test(String(row[col('Email sent')]))) continue;
+    if (MailApp.getRemainingDailyQuota() < 1) { failed++; continue; }
+    let detail = {};
+    try { detail = JSON.parse(row[col('Detail')] || '{}'); } catch (err) {}
+    const result = sendConfirmation(email, detail.guests || [], detail.song || '', row[col('Slug')]);
+    s.getRange(r + 1, col('Email sent') + 1).setValue(result);
+    if (/^Sent/.test(result)) sent++; else failed++;
+  }
+  SpreadsheetApp.getUi().alert(sent + ' confirmation email' + (sent === 1 ? '' : 's') + ' sent.' + (failed ? ' ' + failed + ' still waiting: try again tomorrow.' : ''));
+}
+
 /** Run from the Apps Script editor: emails TEST_EMAIL a sample confirmation. Running it also asks Google for the "send email" permission. */
 function sendTestEmail() {
   const to = TEST_EMAIL;
@@ -338,6 +356,7 @@ const DEFAULT_SITE = 'https://salwaxmarchi.com';
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Invitation')
     .addItem('Make links', 'syncSlugs')
+    .addItem('Resend failed emails', 'resendFailedEmails')
     .addSeparator()
     .addItem('Reset reply', 'clearSelectedReply')
     .addItem('Delete invitation', 'removeSelectedInvitation')
@@ -432,11 +451,15 @@ function setupChaseTab() {
   const col = name => columnLetter(h[name]);
   const cols = ['Side', 'Group', 'Guest 1', 'Guest 2', 'Guest 3', 'Personal link'].filter(n => h[n] !== undefined).map(col);
   const code = col('Guest 1'), replied = col('Replied'); // a row counts once it has a name, before it has a code
+  // Backups (ticked) haven't been sent yet, so there is nobody to chase.
+  const backup = h['Backup'] !== undefined ? col('Backup') : null;
+  const notHeld = backup ? `, Invites!${backup}2:${backup}, "<>TRUE"` : '';
+  const notHeldQuery = backup ? ` and (${backup} is null or ${backup} = false)` : '';
   let s = sheet('To chase');
   if (!s) s = ss.insertSheet('To chase');
   s.clear();
-  s.getRange(1, 1).setFormula(`="Invites waiting on a reply: " & COUNTIFS(Invites!${code}2:${code}, "<>", Invites!${replied}2:${replied}, "")`);
-  s.getRange(3, 1).setFormula(`=QUERY(Invites!A1:Z, "select ${cols.join(', ')} where ${code} is not null and ${replied} is null order by ${col('Side')}, ${col('Group')}", 1)`);
+  s.getRange(1, 1).setFormula(`="Invites waiting on a reply: " & COUNTIFS(Invites!${code}2:${code}, "<>", Invites!${replied}2:${replied}, ""${notHeld})`);
+  s.getRange(3, 1).setFormula(`=QUERY(Invites!A1:Z, "select ${cols.join(', ')} where ${code} is not null and ${replied} is null${notHeldQuery} order by ${col('Side')}, ${col('Group')}", 1)`);
   s.setFrozenRows(3);
 }
 
