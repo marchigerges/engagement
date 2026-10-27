@@ -21,7 +21,7 @@ The Site address cell on Invites sets where links point. Until it holds a real a
 
 ## Automatic deploys
 
-`.github/workflows/deploy-backend.yml` runs on every push to `main` that touches `backend/`. It runs the tests, uploads `Code.gs` and `appsscript.json` with [clasp](https://github.com/google/clasp), and updates the existing web app deployment, so the `/exec` URL never changes. Run it by hand from **Actions > Deploy backend > Run workflow**.
+`.github/workflows/deploy-backend.yml` runs on every push to `main` that touches `backend/`. It runs the tests, uploads only `Code.gs` and `appsscript.json` with [clasp](https://github.com/google/clasp), and updates the existing web app deployment, so the `/exec` URL never changes. Run it by hand from **Actions > Deploy backend > Run workflow**.
 
 One-time setup:
 

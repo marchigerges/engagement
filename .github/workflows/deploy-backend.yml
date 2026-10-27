@@ -33,7 +33,9 @@ jobs:
             echo "::error::Add the CLASPRC_JSON and SCRIPT_ID secrets (backend/README.md, Automatic deploys)."; exit 1
           fi
           printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
-          printf '{"scriptId":"%s","rootDir":"backend"}' "$SCRIPT_ID" > .clasp.json
+          # Upload only the script and its manifest, nothing from backend/test.
+          mkdir -p "$RUNNER_TEMP/gas" && cp backend/Code.gs backend/appsscript.json "$RUNNER_TEMP/gas/"
+          printf '{"scriptId":"%s","rootDir":"%s"}' "$SCRIPT_ID" "$RUNNER_TEMP/gas" > .clasp.json
       - name: Upload code
         run: npx -y @google/clasp@2.4.2 push --force
       - name: Update the live web app
