@@ -2,7 +2,7 @@
  * Engagement invite backend. Bound to the "Engagement Party Guest List" Sheet.
  *
  * GET  ?slug=x                -> { ok, invite: { guests, rsvp, open, rsvpBy, dietary } } or { ok: false, error: 'not_found' }
- * POST text/plain JSON { slug, guests: [{ name, attending, dietary, allergies }], song, notes, email, phone }
+ * POST text/plain JSON { slug, guests: [{ name, attending, dietary, allergies }], song, notes, email }
  *      Emails a confirmation to `email` (from the account that deployed the script) when one is given.
  *                             -> { ok, invite }
  *
@@ -18,7 +18,7 @@ const TZ = 'Australia/Sydney';
 const RSVP_BY = new Date('2026-12-31T23:59:59+11:00');
 const MAX_GUESTS = 6;
 const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Pescatarian', 'Gluten free', 'Dairy free', 'Halal', 'Other'];
-const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Phone', 'Email sent'];
+const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Email sent'];
 // Guest List has two side-by-side tables; columns are 1-based.
 const GUEST_LIST_SIDES = [{ name: 2, rsvp: 3, allergies: 4 }, { name: 8, rsvp: 9, allergies: 10 }];
 const GUEST_LIST_FIRST_ROW = 3;
@@ -47,9 +47,8 @@ function doPost(e) {
       const anyoneComing = guests.some(g => g.attending);
       const song = anyoneComing ? String(body.song || '').trim().slice(0, 120) : ''; // no song requests from a declined invitation
       const email = String(body.email || '').trim().slice(0, 120);
-      const phone = String(body.phone || '').trim().slice(0, 20);
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
-      saveResponse(invite, guests, notes, song, validEmail, phone);
+      saveResponse(invite, guests, notes, song, validEmail);
       if (validEmail) {
         const sent = sendConfirmation(validEmail, guests, song, invite.response.slug);
         responsesSheet().getRange(invite.response.row, RESPONSE_HEADERS.indexOf('Email sent') + 1).setValue(sent);
@@ -153,14 +152,14 @@ function cleanGuests(input, names) {
   return out;
 }
 
-function saveResponse(invite, guests, notes, song, email, phone) {
+function saveResponse(invite, guests, notes, song, email) {
   const attending = guests.filter(g => g.attending);
   const status = attending.length === 0 ? 'Declined' : attending.length === guests.length ? 'Accepted' : 'Partial';
   const dietary = attending.filter(g => g.dietary !== 'None').map(g => g.name + ': ' + g.dietary).join('; ');
   const allergies = attending.filter(g => g.allergies).map(g => g.name + ': ' + g.allergies).join('; ');
   const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
-  responsesSheet().getRange(invite.response.row, 3, 1, 11).setValues([[
-    invite.guests.join(', '), status, attending.length, dietary, notes, now, JSON.stringify({ guests, song, email }), allergies, song, email || '', phone || ''
+  responsesSheet().getRange(invite.response.row, 3, 1, 10).setValues([[
+    invite.guests.join(', '), status, attending.length, dietary, notes, now, JSON.stringify({ guests, song, email }), allergies, song, email || ''
   ]]);
 
   const inv = sheet('Invites');
