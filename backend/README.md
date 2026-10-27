@@ -15,9 +15,24 @@ Bound to the **Salwa & Marchi – Invitation Backend** Sheet: https://docs.googl
 4. **Deploy > New deployment > Web app**. Execute as: *Me*. Who has access: *Anyone*. Copy the `/exec` URL and put it in `window.INVITE_API` in `index.html`.
 5. Reload the Sheet: an **Invitation** menu appears. Use **Make links** after adding invites, or after changing the Site address cell on Invites (row 1).
 
-After editing `Code.gs` later, use **Deploy > Manage deployments > Edit > New version** so the URL stays the same.
+After editing `Code.gs` later, the GitHub Action below deploys it. Without it, paste the code and use **Deploy > Manage deployments > Edit > New version** so the URL stays the same.
 
-The Site address cell on Invites sets where links point. Until it holds a real address, links use `https://marchigerges.github.io/engagement`.
+The Site address cell on Invites sets where links point. Until it holds a real address, links use `https://salwaxmarchi.com`.
+
+## Automatic deploys
+
+`.github/workflows/deploy-backend.yml` runs on every push to `main` that touches `backend/`. It runs the tests, uploads `Code.gs` and `appsscript.json` with [clasp](https://github.com/google/clasp), and updates the existing web app deployment, so the `/exec` URL never changes. Run it by hand from **Actions > Deploy backend > Run workflow**.
+
+One-time setup:
+
+1. Turn on the Apps Script API: https://script.google.com/home/usersettings
+2. On a computer with Node installed, run `npx @google/clasp@2.4.2 login` and sign in with the Google account that owns the Sheet. It writes a `.clasprc.json` file in your home folder.
+3. In the repo on GitHub, **Settings > Secrets and variables > Actions > New repository secret**:
+   - `CLASPRC_JSON`: the whole contents of that `.clasprc.json` file.
+   - `SCRIPT_ID`: from Apps Script, **Project Settings > IDs > Script ID**.
+4. **Actions > Deploy backend > Run workflow** to check it works.
+
+`CLASPRC_JSON` can edit your Apps Script projects: keep it only in GitHub Secrets. If the script ever needs a new permission (like sending email did), run any function once in the Apps Script editor and approve it; the Action cannot click Allow for you.
 
 ## Test guests
 

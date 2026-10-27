@@ -1,0 +1,40 @@
+# Pushes backend/Code.gs to Apps Script and updates the live web app (same /exec URL).
+# One-time setup: see backend/README.md, "Automatic deploys".
+name: Deploy backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/deploy-backend.yml']
+  workflow_dispatch:
+
+concurrency: deploy-backend
+
+env:
+  # The web app deployment the site calls (window.INVITE_API in index.html).
+  DEPLOYMENT_ID: AKfycbyXw-FnCLkgx0gt2g6J_ruytb4UaQPxYEEH2P3NqGbOSZgEBHZpEUOyTbIq98692Am1JQ
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test
+        run: node backend/test/run.mjs
+      - name: Sign in to Apps Script
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ] || [ -z "$SCRIPT_ID" ]; then
+            echo "::error::Add the CLASPRC_JSON and SCRIPT_ID secrets (backend/README.md, Automatic deploys)."; exit 1
+          fi
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+          printf '{"scriptId":"%s","rootDir":"backend"}' "$SCRIPT_ID" > .clasp.json
+      - name: Upload code
+        run: npx -y @google/clasp@2.4.2 push --force
+      - name: Update the live web app
+        run: npx -y @google/clasp@2.4.2 deploy --deploymentId "$DEPLOYMENT_ID" --description "${GITHUB_SHA::7}"
