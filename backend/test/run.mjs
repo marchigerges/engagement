@@ -115,7 +115,7 @@ log('POST renamed plus-one', r); assert.equal(r.error, 'invalid');
 r = post({ slug: 'nobody', guests: [] }); log('POST unknown slug', r); assert.equal(r.error, 'not_found');
 
 // Jordan accepts with dietary, Sam declines
-r = post({ slug: jordan, notes: 'Looking forward to it', song: 'September, Earth Wind & Fire', email: 'jordan@example.com', phone: '0400 000 000', guests: [
+r = post({ slug: jordan, notes: 'Looking forward to it', song: 'September, Earth Wind & Fire', email: 'jordan@example.com', guests: [
   { name: 'Jordan Testguest', attending: true, dietary: 'Vegetarian', allergies: 'Peanuts' },
   { name: 'Sam Plusone', attending: false, dietary: 'Vegan', allergies: 'Shellfish' },
 ] });
@@ -150,12 +150,12 @@ r = get({ slug: slugOf('h3wetsfTbX') }); assert.equal(r.invite.open, false);
 // Sheet side effects
 const respRow = c => responses.find(x => x[0] === c);
 log('Responses row, Jordan', respRow('TEST000002').filter((_, i) => i !== 8));
-assert.equal(respRow('TEST000002')[11], 'jordan@example.com'); assert.equal(respRow('TEST000002')[12], '0400 000 000');
+assert.equal(respRow('TEST000002')[11], 'jordan@example.com');
 assert.equal(respRow('TEST000002')[3], 'Partial');
 assert.equal(respRow('TEST000002')[9], 'Jordan Testguest: Peanuts');
 assert.equal(respRow('TEST000002')[10], 'September, Earth Wind & Fire');
-assert.deepEqual(responses[0], ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Phone', 'Email sent']);
-assert.match(respRow('TEST000002')[13], /^Sent /);
+assert.deepEqual(responses[0], ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Dietary', 'Notes', 'Submitted', 'Detail', 'Allergies', 'Song', 'Email', 'Email sent']);
+assert.match(respRow('TEST000002')[12], /^Sent /);
 const invRow = c => sheets.Invites.data.find(x => x[0] === c);
 log('Invites "Replied", Jordan', invRow('TEST000002')[12]);
 assert.match(invRow('TEST000002')[12], /^Partial /);
@@ -177,7 +177,7 @@ assert.match(sent[sent.length - 1].subject, /Thank you for letting us know/);
   const real = ctx.MailApp.sendEmail; ctx.MailApp.sendEmail = () => { throw new Error('Authorization is required'); };
   ctx.clearReply('TEST000002');
   const f = post({ slug: jordan, email: 'jordan@example.com', guests: [{ name: 'Jordan Testguest', attending: false }, { name: 'Sam Plusone', attending: false }] });
-  assert.equal(f.ok, true); assert.equal(respRow('TEST000002')[13], 'Failed: Authorization is required');
+  assert.equal(f.ok, true); assert.equal(respRow('TEST000002')[12], 'Failed: Authorization is required');
   ctx.MailApp.sendEmail = real;
 } assert.doesNotMatch(sent[sent.length - 1].body, /La Riviera/);
 

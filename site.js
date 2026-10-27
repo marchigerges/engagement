@@ -20,7 +20,7 @@
     return (await fetch(API + '?' + new URLSearchParams({ slug }))).json();
   }
 
-  async function sendReply(slug, guests, song, notes, email, phone) {
+  async function sendReply(slug, guests, song, notes, email) {
     if (!API) {
       await wait(700);
       if (mockReplies[slug]) return { ok: false, error: 'already_replied', invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
@@ -28,7 +28,7 @@
       return { ok: true, invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
     }
     // text/plain keeps this a simple request, so the browser skips the CORS preflight Apps Script can't answer.
-    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, song, notes, email, phone }) });
+    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, song, notes, email }) });
     return res.json();
   }
 
@@ -224,7 +224,7 @@
     $('formNote').textContent = '';
     const guests = answers.map(a => ({ name: a.name, attending: a.attending, dietary: a.attending ? a.dietary : 'None', allergies: a.attending ? a.allergies.trim() : '' }));
     let r;
-    const email = $('email').value.trim(), phone = $('phone').value.trim();
+    const email = $('email').value.trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       send.disabled = false; send.textContent = 'Send RSVP';
       $('formNote').textContent = 'Check your email address, or leave it blank.';
@@ -232,7 +232,7 @@
       return;
     }
     const song = guests.some(g => g.attending) ? $('song').value.trim() : '';
-    try { r = await sendReply(slug, guests, song, $('notes').value.trim(), email, phone); } catch (err) { r = { ok: false, error: 'network' }; }
+    try { r = await sendReply(slug, guests, song, $('notes').value.trim(), email); } catch (err) { r = { ok: false, error: 'network' }; }
     if (r.ok || r.error === 'already_replied') return showSent(r.invite.rsvp, true);
     send.disabled = false;
     send.textContent = 'Send RSVP';
