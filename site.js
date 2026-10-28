@@ -161,7 +161,8 @@
   new IntersectionObserver(([e]) => { rsvpInView = e.isIntersecting; floatButton(); }, { threshold: .15 }).observe($('rsvp'));
   addEventListener('scroll', floatButton, { passive: true });
   float.addEventListener('click', () => {
-    $('rsvp').scrollIntoView({ behavior: still ? 'auto' : 'smooth' });
+    const y = $('rsvp').getBoundingClientRect().top + scrollY - 24;
+    if (window.__glide) window.__glide(y); else $('rsvp').scrollIntoView({ behavior: still ? 'auto' : 'smooth' });
   });
 
   const remeasure = () => { if (window.ScrollTrigger) requestAnimationFrame(() => ScrollTrigger.refresh()); };
@@ -393,42 +394,85 @@
     ScrollTrigger.create({ trigger: card, start: () => flowTop(card) - innerHeight * .25, once: true, invalidateOnRefresh: true, onEnter: () => show.play() });
   });
 
-  // Scrolling moves one part at a time: however hard the swipe, the next part slides in and settles.
-  // Inside a part taller than the screen (the collage), and from the evening down, scrolling is free.
-  function stops() {
-    const max = ScrollTrigger.maxScroll(window), evening = $('evening').getBoundingClientRect().top + scrollY;
-    const points = [0], zones = [];
+  // The story moves one part at a time, like turning pages: any swipe or wheel turn, however small or hard,
+  // glides to exactly the next part and stops there. Inside a part taller than the screen (the collage)
+  // the page scrolls normally until its edge, and from the evening down scrolling is entirely normal.
+  function parts() {
+    const evening = $('evening').getBoundingClientRect().top + scrollY;
+    const stops = [0], zones = [];
     cards.slice(1).forEach(c => {
       const top = flowTop(c), extra = Math.max(0, c.offsetHeight - innerHeight);
-      points.push(top);
-      if (extra > 60) { points.push(top + extra); zones.push([top, top + extra]); }
+      stops.push(top);
+      if (extra > 2) { stops.push(top + extra); zones.push([top, top + extra]); }
     });
-    points.push(evening);
-    return { points: points.map(p => Math.min(p, max)), zones, evening, max };
+    stops.push(evening);
+    return { stops, zones, evening };
   }
-  // Where the page was resting when the current swipe began.
-  let restY = scrollY, settled = scrollY, moving = false, rest;
+  let turning = false, quietUntil = 0;
+  function glide(target, duration = .95) {
+    turning = true;
+    const at = { y: scrollY };
+    gsap.to(at, { y: target, duration, ease: 'power3.inOut', onUpdate: () => scrollTo(0, at.y),
+      onComplete: () => { turning = false; quietUntil = performance.now() + 450; } }); // ignore the tail of a trackpad's momentum
+  }
+  window.__glide = y => glide(y, 1.4); // the RSVP button
+  function turn(dir) {
+    const { stops } = parts(), y = scrollY;
+    const target = dir > 0 ? stops.find(p => p > y + 2) : [...stops].reverse().find(p => p < y - 2);
+    if (target !== undefined) glide(target);
+  }
+  // Whether a gesture in this direction should turn the page, or be left to the browser's own scrolling.
+  function paging(dir) {
+    const { zones, evening } = parts(), y = scrollY;
+    if (y > evening + 2) return false;                          // the evening and below scroll freely
+    if (y > evening - 2) return dir < 0;                        // at the evening, only going back up turns
+    const zone = zones.find(([a, b]) => y > a - 2 && y < b + 2);
+    if (!zone) return true;
+    return dir < 0 ? y < zone[0] + 2 : y > zone[1] - 2;         // inside a tall part, turn only at its edges
+  }
+  let touchY = null, touchTurned = false;
+  addEventListener('touchstart', e => { touchY = e.touches[0].clientY; touchTurned = false; }, { passive: true });
+  addEventListener('touchmove', e => {
+    if (touchY === null) return;
+    const dy = touchY - e.touches[0].clientY, dir = dy > 0 ? 1 : -1;
+    if (turning || touchTurned) { e.preventDefault(); return; }
+    if (Math.abs(dy) < 4 || !paging(dir)) return;
+    e.preventDefault();
+    if (Math.abs(dy) > 24) { touchTurned = true; turn(dir); }
+  }, { passive: false });
+  addEventListener('touchend', () => { touchY = null; }, { passive: true });
+  addEventListener('wheel', e => {
+    const dir = e.deltaY > 0 ? 1 : -1;
+    if (turning || performance.now() < quietUntil) { if (paging(dir) || turning) e.preventDefault(); return; }
+    if (Math.abs(e.deltaY) < 2) return;
+    if (paging(dir)) { e.preventDefault(); turn(dir); return; }
+    // Inside a tall part, a big wheel turn stops at the part's edge rather than flying past it.
+    const { zones } = parts(), y = scrollY, zone = zones.find(([a, z]) => y > a - 2 && y < z + 2);
+    if (zone && (y + e.deltaY > zone[1] || y + e.deltaY < zone[0])) { e.preventDefault(); scrollTo(0, dir > 0 ? zone[1] : zone[0]); }
+  }, { passive: false });
+  // A flick that coasts out of a tall part and stops between parts glides on to the next part.
+  let lastY = scrollY, lastDir = 1, idle;
   addEventListener('scroll', () => {
-    if (!moving) { moving = true; settled = restY; }
-    clearTimeout(rest);
-    rest = setTimeout(() => { moving = false; restY = scrollY; }, 350);
+    if (scrollY !== lastY) lastDir = scrollY > lastY ? 1 : -1;
+    // Momentum or a big wheel turn that carries out of a tall part stops at its edge; the next swipe turns the page.
+    if (!turning) {
+      const zone = parts().zones.find(([a, z]) => lastY > a - 3 && lastY < z + 3);
+      if (zone && (scrollY < zone[0] - 3 || scrollY > zone[1] + 3)) { lastY = scrollY < zone[0] ? zone[0] : zone[1]; scrollTo(0, lastY); return; }
+    }
+    lastY = scrollY;
+    clearTimeout(idle);
+    idle = setTimeout(() => {
+      if (turning || touchY !== null) return;
+      const { stops, zones, evening } = parts(), y = scrollY;
+      if (y > evening - 2 || stops.some(p => Math.abs(p - y) < 3) || zones.some(([a, z]) => y > a && y < z)) return;
+      turn(lastDir);
+    }, 160);
   }, { passive: true });
-  ScrollTrigger.create({
-    start: 0, end: 'max',
-    snap: {
-      snapTo: (progress, self) => {
-        const { points, zones, evening, max } = stops(), y = progress * max, near = (a, b) => Math.abs(a - b) < 6;
-        if (points.some(p => near(p, y))) return progress;
-        const fromPoint = points.some(p => near(p, settled)) || zones.some(([a, b]) => settled > a && settled < b), from = fromPoint ? settled : y; // one part at a time from where the last swipe began
-        const target = self.direction > 0 ? points.find(p => p > from + 6) : [...points].reverse().find(p => p < from - 6);
-        if (target === undefined) return progress;
-        const overshot = fromPoint && (self.direction > 0 ? y > target : y < target); // a hard swipe that flew past the next part
-        if (!overshot && (y > evening + 4 || zones.some(([a, b]) => y > a + 4 && y < b - 4))) return progress;
-        if (settled > evening + 4 && y > evening + 4) return progress;
-        return target / max;
-      },
-      duration: { min: .45, max: 1 }, delay: .05, ease: 'power3.inOut', inertia: false,
-    },
+  addEventListener('keydown', e => {
+    const dir = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 }[e.key];
+    if (!dir || /input|textarea|select|button/i.test(document.activeElement.tagName) || !paging(dir)) return;
+    e.preventDefault();
+    if (!turning) turn(dir);
   });
 
   // Chapter two: each print is laid on the table as it arrives, swinging into its angle, in quick succession.
