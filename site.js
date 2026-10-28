@@ -125,7 +125,7 @@
       'BEGIN:VEVENT',
       'UID:engagement-20270123@salwa-marchi',
       'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),
-      'DTSTART:20270123T080000Z', 'DTEND:20270123T130000Z',
+      'DTSTART:20270123T080000Z', 'DTEND:20270123T120000Z',
       'SUMMARY:Salwa & Marchi engagement',
       'LOCATION:La Riviera Restaurant & Bar\\, 170 Phillip St\\, Sydney NSW 2000',
       'DESCRIPTION:Dress code: chic cocktail attire. White and ivory are reserved for the bride-to-be. 50m from Martin Place Station.',

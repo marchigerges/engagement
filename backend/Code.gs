@@ -173,18 +173,18 @@ function saveResponse(invite, guests, notes, song, email) {
 
 const EVENT = {
   title: "Salwa & Marchi's Engagement",
-  date: 'Saturday 23 January 2027, 7pm',
+  date: 'Saturday 23 January 2027, 7pm to 11pm',
   venue: 'La Riviera Restaurant & Bar',
   address: '170 Phillip St, Sydney NSW 2000',
   transport: '50m from Martin Place Station',
   dress: 'Chic cocktail attire: satin silhouettes, timeless neutrals and classic black; tailored suits for gentlemen. White and ivory are reserved for the bride-to-be.',
   map: 'https://www.google.com/maps/search/?api=1&query=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000',
-  calendar: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Salwa+%26+Marchi%27s+Engagement&dates=20270123T080000Z/20270123T130000Z&location=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000&details=Dress+code%3A+chic+cocktail+attire.',
+  calendar: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Salwa+%26+Marchi%27s+Engagement&dates=20270123T080000Z/20270123T120000Z&location=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000&details=Dress+code%3A+chic+cocktail+attire.',
 };
 
 function calendarFile() {
   const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Salwa and Marchi//Engagement//EN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
-    'UID:engagement-20270123@salwa-marchi', 'DTSTAMP:20261101T000000Z', 'DTSTART:20270123T080000Z', 'DTEND:20270123T130000Z',
+    'UID:engagement-20270123@salwa-marchi', 'DTSTAMP:20261101T000000Z', 'DTSTART:20270123T080000Z', 'DTEND:20270123T120000Z',
     "SUMMARY:Salwa & Marchi's Engagement", 'LOCATION:La Riviera Restaurant & Bar\\, 170 Phillip St\\, Sydney NSW 2000',
     'DESCRIPTION:Dress code: chic cocktail attire. 50m from Martin Place Station.', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
   return Utilities.newBlob(ics, 'text/calendar', 'salwa-marchi-engagement.ics');
