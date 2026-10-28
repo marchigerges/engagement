@@ -163,6 +163,41 @@
   });
 
   const remeasure = () => { if (window.ScrollTrigger) requestAnimationFrame(() => ScrollTrigger.refresh()); };
+  const animate = !still && !!window.gsap;
+
+  // Opens or closes a block by easing its height, so the page below glides instead of jumping.
+  function reveal(el, open) {
+    if (open === !el.hidden) return;
+    if (!animate) { el.hidden = !open; return remeasure(); }
+    gsap.killTweensOf(el);
+    if (open) {
+      el.hidden = false;
+      gsap.fromTo(el, { height: 0, autoAlpha: 0 }, { height: 'auto', autoAlpha: 1, duration: .7, ease: 'expo.out', clearProps: 'height,opacity,visibility', onComplete: remeasure });
+    } else {
+      gsap.to(el, { height: 0, autoAlpha: 0, duration: .45, ease: 'power3.inOut', onComplete: () => { el.hidden = true; gsap.set(el, { clearProps: 'height,opacity,visibility' }); remeasure(); } });
+    }
+  }
+
+  // FAQ answers ease open and closed.
+  document.querySelectorAll('.faq details').forEach(d => {
+    const summary = d.querySelector('summary'), body = document.createElement('div');
+    body.className = 'faq-a';
+    while (summary.nextSibling) body.appendChild(summary.nextSibling);
+    d.appendChild(body);
+    if (!animate) return;
+    summary.addEventListener('click', e => {
+      e.preventDefault();
+      gsap.killTweensOf(body);
+      if (d.open && !d.classList.contains('is-closing')) {
+        d.classList.add('is-closing');
+        gsap.to(body, { height: 0, autoAlpha: 0, duration: .45, ease: 'power3.inOut', onComplete: () => { d.open = false; d.classList.remove('is-closing'); gsap.set(body, { clearProps: 'height,opacity,visibility' }); remeasure(); } });
+      } else {
+        d.classList.remove('is-closing');
+        d.open = true;
+        gsap.fromTo(body, { height: 0, autoAlpha: 0 }, { height: 'auto', autoAlpha: 1, duration: .7, ease: 'expo.out', clearProps: 'height,opacity,visibility', onComplete: remeasure });
+      }
+    });
+  });
 
   function renderRsvp() {
     if (invite.rsvp) return showSent(invite.rsvp);
@@ -193,8 +228,7 @@
         const b = e.target.closest('button'); if (!b) return;
         answers[i].attending = b.dataset.v === 'yes';
         row.querySelectorAll('.choice button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-        row.querySelector('.needs').hidden = !answers[i].attending;
-        remeasure();
+        reveal(row.querySelector('.needs'), answers[i].attending);
         $('send').disabled = answers.some(a => a.attending === null);
         $('formNote').textContent = '';
         fitToAnswers();
@@ -255,7 +289,7 @@
     $('sentLine').innerHTML = (rsvp.email ? 'A confirmation is on its way to <span class="as-typed">' + esc(rsvp.email) + '</span>. ' : 'Thank you for letting us know. ') + 'Need to change something? Message Salwa or Marchi.';
     $('sent').hidden = false;
     remeasure();
-    if (animate && !still) gsap.from('#sent > *', { opacity: 0, y: 20, duration: 1, stagger: .1, ease: 'power3.out' });
+    if (animate && !still) gsap.from('#sent > *', { autoAlpha: 0, y: 24, duration: 1.1, stagger: .1, ease: 'expo.out' });
   }
 
   /* ---------- The film ---------- */
@@ -327,20 +361,23 @@
     const range = { trigger: '#chOne', start: () => flowTop($('chOne')) - innerHeight, end: () => flowTop($('chOne')), scrub: true, invalidateOnRefresh: true };
     gsap.fromTo('#chOneFrame img', { scale: 1.25 }, { scale: 1, ease: 'none', scrollTrigger: range });
     gsap.fromTo('#chOneFrame .tone', { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: range });
-    gsap.fromTo('#chOneText > *', { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1.1, stagger: .1, ease: 'power3.out',
+    gsap.fromTo('#chOneText > *', { autoAlpha: 0, y: 32 }, { autoAlpha: 1, y: 0, duration: 1.2, stagger: .09, ease: 'expo.out',
       scrollTrigger: { trigger: '#chOne', start: () => flowTop($('chOne')) - innerHeight * .35, once: true, invalidateOnRefresh: true } });
   }
 
-  // Each photograph warms from oxblood to full colour as it reaches the middle of the screen.
-  gsap.utils.toArray('.chapter:not(.ch-one) .frame .tone').forEach(t => {
-    gsap.fromTo(t, { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: { trigger: t.parentNode, start: 'top 85%', end: 'center 50%', scrub: true } });
+  // Chapter two: each print is laid on the table as it arrives, swinging into its angle, in quick succession.
+  // Then, while it passes, the photograph inside settles and warms from oxblood to full colour.
+  const prints = gsap.utils.toArray('#scatter .frame');
+  const tilt = f => parseFloat(getComputedStyle(f).getPropertyValue('--r')) || 0; // each print's resting angle, from the CSS
+  gsap.set(prints, { autoAlpha: 0, y: 110, scale: 1.06, rotation: (i, f) => tilt(f) + (i % 2 ? 9 : -9) });
+  ScrollTrigger.batch(prints, {
+    start: 'top 92%', once: true,
+    onEnter: batch => gsap.to(batch, { autoAlpha: 1, y: 0, scale: 1, rotation: (i, f) => tilt(f), duration: 1.3, stagger: .14, ease: 'expo.out', overwrite: true }),
   });
-
-  // Chapter two: the scattered photographs drift at different speeds as they pass.
-  const SPEEDS = [40, 110, 60, 130, 50, 100, 70, 140, 60, 120, 80];
-  gsap.utils.toArray('#scatter .frame').forEach((f, i) => {
-    const d = SPEEDS[i % SPEEDS.length];
-    gsap.fromTo(f, { y: d }, { y: -d, ease: 'none', scrollTrigger: { trigger: f, start: 'top bottom', end: 'bottom top', scrub: true } });
+  prints.forEach(f => {
+    const range = { trigger: f, start: 'top bottom', end: 'bottom 45%', scrub: true };
+    gsap.fromTo(f.querySelector('img'), { scale: 1.18 }, { scale: 1, ease: 'none', scrollTrigger: range });
+    gsap.fromTo(f.querySelector('.tone'), { opacity: .85 }, { opacity: 0, ease: 'none', scrollTrigger: { ...range, end: 'center 55%' } });
   });
 
   // Chapter three: the title writes itself.
@@ -353,7 +390,7 @@
   // Everything marked data-rise arrives once, its children staggered.
   gsap.utils.toArray('[data-rise]').forEach(el => {
     const parts = el.children.length > 1 ? el.children : el;
-    gsap.from(parts, { autoAlpha: 0, y: 28, duration: 1.2, stagger: .09, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 86%', once: true } });
+    gsap.from(parts, { autoAlpha: 0, y: 32, duration: 1.2, stagger: .09, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
   });
 
   // Countdown: the number counts up to today's figure.
