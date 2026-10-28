@@ -144,12 +144,12 @@
   const answers = [];
   let replied = false;
 
-  /* ---------- Reply button: appears once the opening has passed, hides at the reply card and after replying ---------- */
+  /* ---------- Reply button: appears once the opening has passed, hides at and after the reply card, and after replying ---------- */
 
   const float = $('replyFloat');
   let rsvpInView = false;
   function floatButton() {
-    const show = !replied && !rsvpInView && scrollY > innerHeight * 1.2 && !$('rsvpForm').hidden;
+    const show = !replied && !rsvpInView && scrollY > innerHeight * 1.2 && !$('rsvpForm').hidden && $('rsvp').getBoundingClientRect().top > 0;
     float.hidden = false;
     float.classList.toggle('show', show);
     float.tabIndex = show ? 0 : -1;
