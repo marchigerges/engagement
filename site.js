@@ -128,7 +128,7 @@
       'DTSTART:20270123T080000Z', 'DTEND:20270123T120000Z',
       'SUMMARY:Salwa & Marchi engagement',
       'LOCATION:La Riviera Restaurant & Bar\\, 170 Phillip St\\, Sydney NSW 2000',
-      'DESCRIPTION:Dress code: chic cocktail attire. White and ivory are reserved for the bride-to-be. 50m from Martin Place Station.',
+      'DESCRIPTION:Dress code: elevated cocktail. Kindly avoid white\\, ivory\\, bright colours\\, summery dresses and linen. 50m from Martin Place Station.',
       'END:VEVENT', 'END:VCALENDAR',
     ].join('\r\n');
     const a = document.createElement('a');
