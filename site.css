@@ -110,7 +110,7 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 
 /* Chapter two: the years as a collage of prints, laid on the table at slight angles and overlapping.
    Positions are fractions of the collage's own width, so it holds its shape at any size. */
-.ch-two { padding-bottom: clamp(72px, 12svh, 120px); display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.ch-two { padding-block: clamp(72px, 12svh, 120px); display: flex; flex-direction: column; align-items: center; gap: 22px; }
 .scatter { position: relative; width: min(100%, 560px); aspect-ratio: 1 / 3.3; margin-top: clamp(40px, 7svh, 72px); }
 .scatter .frame {
   position: absolute; width: var(--w); left: var(--x); top: var(--y); transform: rotate(var(--r));
@@ -133,16 +133,16 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
   .scatter .frame:hover { translate: 0 -8px; z-index: 5; box-shadow: 0 2px 4px rgba(40, 0, 0, .14), 0 30px 50px -18px rgba(40, 0, 0, .55); }
 }
 
-/* Every chapter opens on its own screen: a huge faint numeral, the chapter number, a drawn rule
-   and the title, large, writing itself in. */
-.chapter-intro { position: relative; width: 100%; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(16px, 3svh, 26px); text-align: center; overflow: hidden; }
-.intro-numeral { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: Didot, "Bodoni 72", Georgia, "Times New Roman", serif; font-size: min(86vw, 64svh); line-height: .8; font-weight: 400; letter-spacing: .02em; color: var(--ink); opacity: .06; pointer-events: none; user-select: none; white-space: nowrap; }
-.intro-num { position: relative; letter-spacing: .32em; color: var(--ink-dim); }
-.intro-rule { position: relative; display: block; width: min(34vw, 150px); height: 1px; background: var(--ink); opacity: .45; }
-.intro-title { position: relative; font-size: clamp(4.2rem, 19vw, 10rem); line-height: .98; max-width: 8.5ch; }
+/* Every chapter arrives on its title alone, laid over the first screen of the card. The title writes in,
+   holds for a beat, then fades away to show the story underneath. Shown only when the script runs it. */
+.chapter-intro { display: none; position: absolute; left: 0; right: 0; top: 0; z-index: 5; height: 100svh; flex-direction: column; align-items: center; justify-content: center; gap: clamp(16px, 3svh, 26px); padding: 0 var(--gutter); text-align: center; background: var(--card-bg); border-radius: inherit; }
+html.has-intros .chapter-intro { display: flex; }
+.intro-num { letter-spacing: .32em; color: var(--ink-dim); }
+.intro-rule { display: block; width: min(34vw, 150px); height: 1px; background: var(--ink); opacity: .45; }
+.intro-title { font-size: clamp(4.2rem, 19vw, 10rem); line-height: .98; max-width: 8.5ch; }
 
 /* Chapter three: words only. */
-.ch-three { display: flex; flex-direction: column; align-items: center; padding-bottom: clamp(96px, 18svh, 160px); }
+.ch-three { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-block: 64px; }
 .ch-three .chapter-text { margin-top: 0; }
 
 /* ---------- The evening ---------- */
