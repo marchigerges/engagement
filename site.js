@@ -375,18 +375,21 @@
     const intro = card.querySelector('.chapter-intro');
     if (!intro) return;
     const num = intro.querySelector('.intro-num'), rule = intro.querySelector('.intro-rule'), title = intro.querySelector('.write');
-    const story = card.id === 'chOne' ? $('chOneText').children : card.querySelectorAll('.chapter-text > *');
+    const story = card.id === 'chOne' ? $('chOneText').children : card.querySelectorAll('.chapter-text > :not(.aside)');
+    const aside = card.querySelector('.aside'); // the punchline lands a beat after the story
     const track = k => parseFloat(getComputedStyle(num).fontSize) * k + 'px'; // GSAP mis-converts em letter-spacing, so use px
     gsap.set(title, { clipPath: HIDE });
     gsap.set(num, { autoAlpha: 0, letterSpacing: track(.7) });
     gsap.set(rule, { scaleX: 0 });
     gsap.set(story, { autoAlpha: 0, y: 24 });
+    if (aside) gsap.set(aside, { autoAlpha: 0, y: 16 });
     const show = gsap.timeline({ paused: true })
       .to(num, { autoAlpha: 1, letterSpacing: track(.32), duration: .9, ease: 'expo.out' }, 0)
       .to(rule, { scaleX: 1, duration: .9, ease: 'expo.inOut' }, .1)
       .to(title, { clipPath: SHOW, duration: 1.3, ease: 'power2.inOut' }, .25)
       .to(intro, { autoAlpha: 0, duration: .7, ease: 'power2.inOut' }, 2.6)
       .to(story, { autoAlpha: 1, y: 0, duration: 1.1, stagger: .1, ease: 'expo.out' }, 2.95);
+    if (aside) show.to(aside, { autoAlpha: 1, y: 0, duration: 1.2, ease: 'expo.out' }, 4.6);
     // Chapter one: the photograph settles into its frame and warms to colour as the story appears.
     if (card.id === 'chOne') show
       .fromTo('#chOneFrame img', { scale: 1.2 }, { scale: 1, duration: 2.2, ease: 'expo.out' }, 2.75)
@@ -422,13 +425,19 @@
     if (target !== undefined) glide(target);
   }
   // Whether a gesture in this direction should turn the page, or be left to the browser's own scrolling.
+  // Scrolling to the edge of a tall part leaves a little slack: the page holds there for a moment, so the
+  // overscroll from the end of the collage does not carry straight on into the next chapter.
+  let edgeHoldUntil = 0;
+  const SLACK = 900;
   function paging(dir) {
     const { zones, evening } = parts(), y = scrollY;
     if (y > evening + 2) return false;                          // the evening and below scroll freely
     if (y > evening - 2) return dir < 0;                        // at the evening, only going back up turns
     const zone = zones.find(([a, b]) => y > a - 2 && y < b + 2);
     if (!zone) return true;
-    return dir < 0 ? y < zone[0] + 2 : y > zone[1] - 2;         // inside a tall part, turn only at its edges
+    const atEdge = dir < 0 ? y < zone[0] + 2 : y > zone[1] - 2; // inside a tall part, turn only at its edges
+    if (atEdge && performance.now() < edgeHoldUntil) return 'hold';
+    return atEdge;
   }
   let touchY = null, touchTurned = false;
   addEventListener('touchstart', e => { touchY = e.touches[0].clientY; touchTurned = false; }, { passive: true });
@@ -436,16 +445,18 @@
     if (touchY === null) return;
     const dy = touchY - e.touches[0].clientY, dir = dy > 0 ? 1 : -1;
     if (turning || touchTurned) { e.preventDefault(); return; }
-    if (Math.abs(dy) < 4 || !paging(dir)) return;
+    const gate = Math.abs(dy) < 4 ? false : paging(dir);
+    if (!gate) return;
     e.preventDefault();
-    if (Math.abs(dy) > 24) { touchTurned = true; turn(dir); }
+    if (gate === true && Math.abs(dy) > 24) { touchTurned = true; turn(dir); }
   }, { passive: false });
   addEventListener('touchend', () => { touchY = null; }, { passive: true });
   addEventListener('wheel', e => {
     const dir = e.deltaY > 0 ? 1 : -1;
     if (turning || performance.now() < quietUntil) { if (paging(dir) || turning) e.preventDefault(); return; }
     if (Math.abs(e.deltaY) < 2) return;
-    if (paging(dir)) { e.preventDefault(); turn(dir); return; }
+    const gate = paging(dir);
+    if (gate) { e.preventDefault(); if (gate === true) turn(dir); else edgeHoldUntil = performance.now() + SLACK; return; }
     // Inside a tall part, a big wheel turn stops at the part's edge rather than flying past it.
     const { zones } = parts(), y = scrollY, zone = zones.find(([a, z]) => y > a - 2 && y < z + 2);
     if (zone && (y + e.deltaY > zone[1] || y + e.deltaY < zone[0])) { e.preventDefault(); scrollTo(0, dir > 0 ? zone[1] : zone[0]); }
@@ -457,7 +468,8 @@
     // Momentum or a big wheel turn that carries out of a tall part stops at its edge; the next swipe turns the page.
     if (!turning) {
       const zone = parts().zones.find(([a, z]) => lastY > a - 3 && lastY < z + 3);
-      if (zone && (scrollY < zone[0] - 3 || scrollY > zone[1] + 3)) { lastY = scrollY < zone[0] ? zone[0] : zone[1]; scrollTo(0, lastY); return; }
+      if (zone && (scrollY < zone[0] - 3 || scrollY > zone[1] + 3)) { lastY = scrollY < zone[0] ? zone[0] : zone[1]; edgeHoldUntil = performance.now() + SLACK; scrollTo(0, lastY); return; }
+      if (zone && lastY > zone[0] + 3 && lastY < zone[1] - 3 && (scrollY <= zone[0] + 3 || scrollY >= zone[1] - 3)) edgeHoldUntil = performance.now() + SLACK; // reached an edge by scrolling
     }
     lastY = scrollY;
     clearTimeout(idle);
@@ -472,7 +484,7 @@
     const dir = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 }[e.key];
     if (!dir || /input|textarea|select|button/i.test(document.activeElement.tagName) || !paging(dir)) return;
     e.preventDefault();
-    if (!turning) turn(dir);
+    if (!turning && paging(dir) === true) turn(dir);
   });
 
   // Chapter two: each print is laid on the table as it arrives, swinging into its angle, in quick succession.
