@@ -71,10 +71,14 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(28px, 6svh, 56px);
   padding: max(28px, env(safe-area-inset-top)) 0 clamp(84px, 14svh, 120px);
 }
-.stage-photo { position: absolute; inset: 0; opacity: .18; transform: scale(1.2); will-change: transform, opacity; }
-.stage-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.stage-photo { position: absolute; inset: 0; will-change: transform, opacity; }
+/* Framed so the two of us sit in the middle of the screen: shifted to centre us across, and enlarged from the top
+   so our faces come down towards the middle. */
+.stage-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 40% 0%; transform: scale(1.25); transform-origin: 50% 0%; }
 /* A shade over the photograph so white type always reads, deepest where the words sit. */
-.scrim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(90% 60% at 50% 45%, rgba(50, 0, 0, .55), rgba(50, 0, 0, .25) 70%, rgba(50, 0, 0, .5)); }
+.scrim { position: absolute; inset: 0; pointer-events: none; background:
+  linear-gradient(rgba(106, 0, 0, .5), rgba(106, 0, 0, .4) 45%, rgba(70, 0, 0, .75)),
+  radial-gradient(80% 50% at 50% 45%, rgba(60, 0, 0, .35), transparent 75%); }
 
 /* Every photograph starts tinted to the card's oxblood and warms to full colour as it arrives.
    The tint is a colour-blend layer, so the reveal is an opacity change only. */
@@ -249,6 +253,7 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 
 /* ---------- Without motion: everything simply sits on the page ---------- */
 html.still .opening, html.still .card { position: relative; top: auto; }
-html.still .stage-photo { opacity: .5; transform: none; }
+html.still .stage-photo { opacity: 1; transform: none; }
+html.still .stage-photo .tone { opacity: 0; }
 html.still .tone { opacity: 0; }
 html.still .cue { display: none; }

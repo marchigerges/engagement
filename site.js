@@ -80,7 +80,10 @@
   }
 
   // Apps Script can take a few seconds to wake, so the reply card says it is loading, and offers a retry if it fails.
-  const greet = names => { $('greeting').textContent = 'Dear ' + joinNames(names.map(firstName)); };
+  // The opening waits (briefly) for the guest's name, since it is the first thing on screen.
+  let nameReady;
+  const named = new Promise(r => { nameReady = r; });
+  const greet = names => { $('greeting').textContent = 'Dear ' + joinNames(names.map(firstName)); nameReady(); };
   let greeted = false;
 
   function load() {
@@ -95,7 +98,7 @@
       $('rsvpStatus').hidden = true;
       renderRsvp();
     }).catch(() => {
-      if (!invite) $('greeting').textContent = 'Dear friends';
+      if (!invite) { $('greeting').textContent = 'Dear friends'; nameReady(); }
       $('rsvpStatusText').textContent = 'We couldn’t load your reply card. Check your connection and try again.';
       $('rsvpRetry').hidden = false;
     });
@@ -307,17 +310,31 @@
   const HIDE = 'inset(-40% 102% -60% -12%)', SHOW = 'inset(-40% -12% -60% -12%)';
   const write = (el, vars) => gsap.fromTo(el, { clipPath: HIDE }, { clipPath: SHOW, ease: 'power2.inOut', ...vars });
 
-  // Opening: plays by itself on arrival, so the first screen says everything without any scrolling.
+  // Opening, in order: first the guest, alone on red. Then their name rises to the top as the photograph
+  // of the two of us fades up behind, and the invitation writes itself underneath.
   gsap.set(['#shotTitle .write', '#shotNames .write'], { clipPath: HIDE });
   gsap.set(['#shotNames .caps', '#cue'], { autoAlpha: 0, y: 14 });
-  gsap.timeline({ delay: .3, defaults: { ease: 'power2.inOut' } })
-    .to('#stagePhoto', { opacity: 1, scale: 1, duration: 3.2, ease: 'power2.out' }, 0)
-    .to('#stageTone', { opacity: 0, duration: 3.2, ease: 'power1.inOut' }, .4)
-    .to('#shotTitle .were', { clipPath: SHOW, duration: 1.2 }, .5)
-    .to('#shotTitle .eng', { clipPath: SHOW, duration: 1.4 }, 1.4)
-    .to('#shotNames .write', { clipPath: SHOW, duration: 1.2 }, 2.6)
-    .to('#shotNames .caps', { autoAlpha: 1, y: 0, duration: 1, stagger: .12, ease: 'power3.out' }, 3.3)
-    .to('#cue', { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out' }, 3.9);
+  gsap.set('#shotGreet', { autoAlpha: 0 });
+  gsap.set('#stagePhoto', { opacity: 0, scale: 1.14 });
+  gsap.set('.scrim', { opacity: 0 });
+  // Built when it starts, so the name is measured once it is on screen.
+  function playOpening() {
+    const r = $('shotGreet').getBoundingClientRect(), dy = innerHeight / 2 - (r.top + r.height / 2);
+    const big = Math.min(1.35, (innerWidth - 32) / ($('greeting').offsetWidth || 1)); // larger while it is alone, but never wider than the screen
+    gsap.timeline({ defaults: { ease: 'power2.inOut' } })
+      .fromTo('#shotGreet', { autoAlpha: 0, y: dy + 18, scale: big }, { autoAlpha: 1, y: dy, duration: 1, ease: 'expo.out' }, 0)
+      .to('#shotGreet', { y: 0, scale: 1, duration: 1.4, ease: 'expo.inOut' }, 1.7)
+      .to('#stagePhoto', { opacity: 1, scale: 1, duration: 3, ease: 'power2.out' }, 1.8)
+      .to('.scrim', { opacity: 1, duration: 2, ease: 'power1.inOut' }, 1.8)
+      .to('#stageTone', { opacity: 0, duration: 3, ease: 'power1.inOut' }, 2.1)
+      .to('#shotTitle .were', { clipPath: SHOW, duration: 1.2 }, 2.6)
+      .to('#shotTitle .eng', { clipPath: SHOW, duration: 1.4 }, 3.4)
+      .to('#shotNames .write', { clipPath: SHOW, duration: 1.2 }, 4.5)
+      .to('#shotNames .caps', { autoAlpha: 1, y: 0, duration: 1, stagger: .12, ease: 'expo.out' }, 5.1)
+      .to('#cue', { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out' }, 5.6);
+  }
+  // Start as soon as the name is known; if the name is slow, start anyway after a moment.
+  Promise.race([named, new Promise(r => setTimeout(r, 1500))]).then(() => setTimeout(playOpening, 250));
 
   /* ---------- The stack: each card holds while the next slides over it ---------- */
 
