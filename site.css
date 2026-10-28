@@ -104,25 +104,29 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 .ch-one .frame { width: min(50vw, 320px, 30svh); aspect-ratio: 4 / 5; will-change: transform; }
 .ch-one .frame img { object-position: 50% 48%; }
 
-/* Chapter two: the years as a loose scatter of photographs, mixed sizes on alternating sides,
-   overlapping a little, each drifting at its own speed. */
+/* Chapter two: the years as a collage of prints, laid on the table at slight angles and overlapping.
+   Positions are fractions of the collage's own width, so it holds its shape at any size. */
 .ch-two { padding-block: clamp(72px, 12svh, 120px); display: flex; flex-direction: column; align-items: center; gap: 22px; }
-.scatter { position: relative; width: min(100%, 720px); margin-top: clamp(40px, 7svh, 72px); display: flex; flex-direction: column; }
-.scatter .frame { aspect-ratio: 4 / 5; will-change: transform; }
-.scatter .frame + .frame { margin-top: -14%; }
-.scatter .frame:nth-child(11n+1)  { width: 64%; align-self: flex-start; }
-.scatter .frame:nth-child(11n+2)  { width: 52%; align-self: flex-end; }
-.scatter .frame:nth-child(11n+3)  { width: 58%; align-self: flex-start; margin-left: 6%; }
-.scatter .frame:nth-child(11n+4)  { width: 48%; align-self: flex-end; margin-right: 4%; }
-.scatter .frame:nth-child(11n+5)  { width: 66%; align-self: center; }
-.scatter .frame:nth-child(11n+6)  { width: 54%; align-self: flex-start; }
-.scatter .frame:nth-child(11n+7)  { width: 60%; align-self: flex-end; }
-.scatter .frame:nth-child(11n+8)  { width: 50%; align-self: flex-start; margin-left: 10%; }
-.scatter .frame:nth-child(11n+9)  { width: 62%; align-self: flex-end; }
-.scatter .frame:nth-child(11n+10) { width: 56%; align-self: flex-start; }
-.scatter .frame:nth-child(11n+11) { width: 52%; align-self: flex-end; margin-right: 8%; }
-/* Later photographs sit above earlier ones where they overlap. */
-.scatter .frame:nth-child(even) { z-index: 1; }
+.scatter { position: relative; width: min(100%, 560px); aspect-ratio: 1 / 2.9; margin-top: clamp(40px, 7svh, 72px); }
+.scatter .frame {
+  position: absolute; width: var(--w); left: var(--x); top: var(--y); transform: rotate(var(--r));
+  border: clamp(4px, 1.3vw, 8px) solid #fff; background: #fff; will-change: transform;
+  box-shadow: 0 1px 2px rgba(40, 0, 0, .14), 0 18px 34px -14px rgba(40, 0, 0, .5);
+  transition: translate .6s var(--ease-out), box-shadow .6s var(--ease-out);
+}
+.scatter .frame img { height: auto; display: block; }
+.scatter .frame:nth-child(1) { --w: 52%; --x: 3%;  --y: 0%;     --r: -4deg; }
+.scatter .frame:nth-child(2) { --w: 46%; --x: 51%; --y: 4.8%;  --r: 3deg; }
+.scatter .frame:nth-child(3) { --w: 48%; --x: 24%; --y: 21.4%; --r: -1.5deg; }
+.scatter .frame:nth-child(4) { --w: 34%; --x: 62%; --y: 29.7%; --r: 4deg; }
+.scatter .frame:nth-child(5) { --w: 58%; --x: 2%;  --y: 41.4%; --r: -3deg; }
+.scatter .frame:nth-child(6) { --w: 46%; --x: 50%; --y: 49%;   --r: 2deg; }
+.scatter .frame:nth-child(7) { --w: 34%; --x: 6%;  --y: 55.2%; --r: -3.5deg; }
+.scatter .frame:nth-child(8) { --w: 48%; --x: 40%; --y: 69%;   --r: 1.5deg; }
+.scatter .frame:nth-child(9) { --w: 56%; --x: 3%;  --y: 82.1%; --r: -2.5deg; }
+@media (hover: hover) and (pointer: fine) {
+  .scatter .frame:hover { translate: 0 -8px; z-index: 5; box-shadow: 0 2px 4px rgba(40, 0, 0, .14), 0 30px 50px -18px rgba(40, 0, 0, .55); }
+}
 
 /* Chapter three: words only. */
 .ch-three { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-block: 64px; }
@@ -164,8 +168,12 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 .choice button {
   min-height: 46px; padding: 0 18px; border: 1px solid var(--ink-faint); background: transparent; cursor: pointer;
   font-weight: 500; font-size: .72rem; letter-spacing: var(--track); text-transform: uppercase;
-  transition: background-color .3s, color .3s, border-color .3s;
+  transition: background-color .3s, color .3s, border-color .3s, transform .3s var(--ease-out);
 }
+.choice button:active { transform: scale(.97); }
+.needs { overflow: hidden; }
+.faq-a { overflow: hidden; }
+.faq details.is-closing summary::after { transform: none; }
 .choice button[aria-pressed="true"] { background: var(--ink); color: var(--red); border-color: var(--ink); }
 .field { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
 .field label { color: var(--ink-dim); }
