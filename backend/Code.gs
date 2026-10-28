@@ -190,62 +190,73 @@ function calendarFile() {
   return Utilities.newBlob(ics, 'text/calendar', 'salwa-marchi-engagement.ics');
 }
 
-/** The email a guest gets after replying: the card, their reply, and one-tap links for the night. */
+/** The email a guest gets after replying: a place card with their names, the details and one-tap links for the night. */
 function confirmationEmail(guests, song, slug) {
   const coming = guests.filter(g => g.attending);
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const first = n => String(n).split(/\s+/)[0];
-  const names = guests.map(g => first(g.name));
-  const hello = names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : names[0];
+  const join = list => list.length > 1 ? list.slice(0, -1).join(', ') + ' & ' + list[list.length - 1] : list[0];
+  const hello = join(guests.map(g => first(g.name)));
   const needs = g => [g.dietary !== 'None' ? g.dietary.toLowerCase() : '', g.allergies ? 'allergic to ' + g.allergies : ''].filter(Boolean).join(', ');
   const lines = guests.map(g => g.name + ': ' + (g.attending ? 'coming' + (needs(g) ? ' (' + needs(g) + ')' : '') : "can't make it"))
     .concat(song ? ['Song request: ' + song] : []);
   const site = siteAddress(), invitation = site + '/' + slug, owner = Session.getEffectiveUser().getEmail();
-  const actions = (coming.length ? [['Add to calendar', EVENT.calendar], ['Get directions', EVENT.map]] : [])
-    .concat([['Open your invitation', invitation]])
-    .concat(owner ? [['Message Salwa & Marchi', 'mailto:' + owner + '?subject=' + encodeURIComponent('Our RSVP (' + hello + ')')]] : []);
+  const message = owner ? 'mailto:' + owner + '?subject=' + encodeURIComponent('Our RSVP (' + hello + ')') : '';
 
   const subject = coming.length ? 'See you on 23 January | Salwa & Marchi' : 'Thank you for letting us know | Salwa & Marchi';
-  const heading = coming.length ? 'Thanks for your RSVP, ' + hello : 'We’ll miss you, ' + hello;
-  const intro = coming.length ? 'Hang on to this email: it has everything you need for the night.'
+  const heading = coming.length ? 'See you on the 23rd, ' + join(coming.map(g => first(g.name))) : 'We’ll miss you, ' + hello;
+  const intro = coming.length ? 'Your seats are saved. Hang on to this email: it has everything you need for the night.'
     : 'Thank you for letting us know. We’ll be thinking of you on the night.';
+  const ps = coming.length ? 'P.S. This time, dessert is on us.' : 'P.S. We’ll save you a slice of dessert.';
 
-  const red = '#6a0000', ink = '#3a0000', paper = '#faf6f0', line = '#e8ddd0';
-  const html = `<!doctype html><html><body style="margin:0;padding:0;background:${paper}">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper}"><tr><td align="center" style="padding:24px 12px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:6px;overflow:hidden;font-family:Georgia,'Times New Roman',serif;color:${ink}">
-  <tr><td style="padding:28px 28px 18px;text-align:center">
-    <div style="font-size:30px;font-style:italic;color:${red};line-height:1.2">${esc(EVENT.title)}</div>
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;margin-top:10px;color:${ink}">
-      ${esc(EVENT.venue)}, <a href="${EVENT.map}" style="color:${red}">${esc(EVENT.address)}</a><br>${esc(EVENT.date)}</div>
+  const red = '#6a0000', ink = '#3a0000', soft = '#8a5a5a', paper = '#f4ede4', card = '#fffdf9', line = '#e6d8c8';
+  const sans = 'font-family:Arial,Helvetica,sans-serif', serif = "font-family:Georgia,'Times New Roman',serif";
+  const caps = `${sans};font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:${soft}`;
+  const guestRow = g => g.attending
+    ? `<tr><td style="padding:9px 0;border-top:1px solid ${line};text-align:center"><div style="${serif};font-style:italic;font-size:22px;color:${ink}">${esc(g.name)}</div>${needs(g) ? `<div style="${sans};font-size:12px;color:${soft};margin-top:3px">${esc(needs(g))}</div>` : ''}</td></tr>`
+    : `<tr><td style="padding:9px 0;border-top:1px solid ${line};text-align:center"><div style="${serif};font-style:italic;font-size:20px;color:#a8958a">${esc(g.name)}</div><div style="${sans};font-size:12px;color:${soft};margin-top:3px">can’t make it</div></td></tr>`;
+  const fact = (label, value) => `<td width="33%" valign="top" style="padding:14px 6px;text-align:center"><div style="${caps}">${label}</div><div style="${serif};font-size:16px;color:${ink};margin-top:6px;line-height:1.35">${value}</div></td>`;
+  const button = (label, href, solid) => `<a href="${href}" style="display:block;margin:0 0 10px;padding:14px 10px;border:1px solid ${red};border-radius:2px;background:${solid ? red : 'transparent'};color:${solid ? '#ffffff' : red};${sans};font-size:12px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;text-align:center">${label}</a>`;
+
+  const html = `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="x-apple-disable-message-reformatting"></head><body style="margin:0;padding:0;background:${paper};-webkit-text-size-adjust:100%;text-size-adjust:100%">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper}"><tr><td align="center" style="padding:20px 10px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${card};color:${ink}">
+  <tr><td style="background:${red}"><img src="${site}/img/email-header.jpg" width="560" alt="The engagement of Salwa &amp; Marchi, Saturday 23 January 2027" style="display:block;width:100%;height:auto;border:0;color:#ffffff;${serif};font-size:22px;font-style:italic;text-align:center"></td></tr>
+  <tr><td style="padding:32px 28px 8px;text-align:center">
+    <div style="${serif};font-size:28px;line-height:1.25;color:${ink}">${esc(heading)}</div>
+    <div style="${sans};font-size:15px;line-height:1.6;margin-top:12px;color:${ink}">${esc(intro)}</div>
   </td></tr>
-  <tr><td><img src="${site}/img/email-hero.jpg" width="560" alt="Salwa and Marchi" style="display:block;width:100%;height:auto;border:0"></td></tr>
-  <tr><td style="padding:30px 28px 6px;text-align:center">
-    <div style="font-size:26px;line-height:1.25;color:${ink}">${esc(heading)}</div>
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;margin-top:10px">${esc(intro)}</div>
+  <tr><td style="padding:22px 28px 6px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${line};outline:1px solid ${line};outline-offset:-6px;background:#ffffff">
+      <tr><td style="padding:22px 22px 14px">
+        <div style="${caps};text-align:center;padding-bottom:12px">${coming.length ? 'Your place card' : 'Your reply'}</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${guests.map(guestRow).join('')}</table>
+        ${song ? `<div style="border-top:1px solid ${line};padding-top:12px;text-align:center;${sans};font-size:13px;color:${soft}">&#9835; You asked for <span style="${serif};font-style:italic;font-size:15px;color:${ink}">${esc(song)}</span></div>` : ''}
+      </td></tr>
+    </table>
   </td></tr>
-  <tr><td style="padding:18px 28px">
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a5a5a;margin-bottom:8px">Your reply</div>
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7">${lines.map(esc).join('<br>')}</div>
+  ${coming.length ? `<tr><td style="padding:18px 22px 0">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${line};border-bottom:1px solid ${line}"><tr>
+      ${fact('Date', 'Sat 23 Jan')}${fact('Time', '7pm to 11pm')}${fact('Dress', 'Chic cocktail')}
+    </tr></table>
   </td></tr>
-  <tr><td style="padding:6px 28px 8px">
-    ${actions.map(([label, href]) => `<a href="${href}" style="display:block;padding:16px 4px;border-top:1px solid ${line};font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:${red};text-decoration:none">${esc(label)} &rsaquo;</a>`).join('')}
-    <div style="border-top:1px solid ${line}"></div>
+  <tr><td style="padding:18px 28px 4px;text-align:center;${sans};font-size:14px;line-height:1.65;color:${ink}">
+    <b>${esc(EVENT.venue)}</b><br>${esc(EVENT.address)}<br><span style="color:${soft}">${esc(EVENT.transport)}</span>
+    <div style="margin-top:14px">Canapés and a grazing table, so have something to eat beforehand.</div>
+    <div style="margin-top:8px;color:${soft};font-size:13px">${esc(EVENT.dress)}</div>
   </td></tr>
-  ${coming.length ? `<tr><td style="padding:14px 28px 6px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7">
-    <b>When</b><br>${esc(EVENT.date)}<br><br>
-    <b>Where</b><br>${esc(EVENT.venue)}<br>${esc(EVENT.address)}<br>${esc(EVENT.transport)}<br><br>
-    <b>Dress code</b><br>${esc(EVENT.dress)}
-  </td></tr>` : ''}
-  <tr><td style="padding:22px 28px 30px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6">
-    Need to change something? Just reply to this email.<br><br>
-    <span style="font-family:Georgia,serif;font-style:italic;font-size:22px;color:${red}">With love, Salwa &amp; Marchi</span>
+  <tr><td style="padding:22px 28px 6px">${button('Add to calendar', EVENT.calendar, true)}${button('Get directions', EVENT.map)}${button('Open your invitation', invitation)}</td></tr>`
+  : `<tr><td style="padding:22px 28px 6px">${button('Open your invitation', invitation)}</td></tr>`}
+  <tr><td style="padding:18px 28px 34px;text-align:center">
+    <div style="${sans};font-size:13px;line-height:1.6;color:${soft}">Need to change something? Just reply to this email${message ? ` or <a href="${message}" style="color:${red}">message Salwa &amp; Marchi</a>` : ''}.</div>
+    <div style="${serif};font-style:italic;font-size:24px;color:${red};margin-top:22px">With love, Salwa &amp; Marchi</div>
+    <div style="${serif};font-style:italic;font-size:14px;color:${soft};margin-top:14px">${esc(ps)}</div>
   </td></tr>
 </table></td></tr></table></body></html>`;
 
-  const text = [heading, intro, '', 'Your reply', ...lines, '']
-    .concat(coming.length ? ['When: ' + EVENT.date, 'Where: ' + EVENT.venue + ', ' + EVENT.address + ' (' + EVENT.transport + ')', 'Dress code: ' + EVENT.dress, 'Add to calendar: ' + EVENT.calendar, 'Directions: ' + EVENT.map, ''] : [])
-    .concat(['Your invitation: ' + invitation, '', 'Need to change something? Just reply to this email.', '', 'With love,', 'Salwa & Marchi']).join('\n');
+  const text = [heading, intro, '', coming.length ? 'Your place card' : 'Your reply', ...lines, '']
+    .concat(coming.length ? ['When: ' + EVENT.date, 'Where: ' + EVENT.venue + ', ' + EVENT.address + ' (' + EVENT.transport + ')', 'Food: canapés and a grazing table, so have something to eat beforehand.', 'Dress code: ' + EVENT.dress, 'Add to calendar: ' + EVENT.calendar, 'Directions: ' + EVENT.map, ''] : [])
+    .concat(['Your invitation: ' + invitation, '', 'Need to change something? Just reply to this email.', '', 'With love,', 'Salwa & Marchi', '', ps]).join('\n');
   return { subject, html, text, attachCalendar: coming.length > 0 };
 }
 

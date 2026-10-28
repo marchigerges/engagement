@@ -136,7 +136,7 @@ assert.equal(r.invite.rsvp.song, 'September, Earth Wind & Fire');
 assert.equal(sent.length, 1); assert.equal(sent[0].to, 'jordan@example.com');
 log('confirmation email', { subject: sent[0].subject, body: sent[0].body });
 assert.match(sent[0].body, /Jordan Testguest: coming \(vegetarian, allergic to Peanuts\)/); assert.match(sent[0].body, /La Riviera/);
-assert.match(sent[0].htmlBody, /Thanks for your RSVP, Jordan &amp; Sam/);
+assert.match(sent[0].htmlBody, /See you on the 23rd, Jordan</); assert.match(sent[0].htmlBody, /Sam Plusone<\/div><div[^>]*>can’t make it/);
 assert.match(sent[0].htmlBody, /https:\/\/salwa-and-marchi.com\/jordan-testguest/, 'their own invitation link');
 assert.match(sent[0].htmlBody, /mailto:hosts@example.com/); assert.equal(sent[0].attachments[0].name, 'salwa-marchi-engagement.ics');
 fs.writeFileSync(new URL('./email-preview.html', import.meta.url), sent[0].htmlBody);
