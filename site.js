@@ -161,8 +161,7 @@
   new IntersectionObserver(([e]) => { rsvpInView = e.isIntersecting; floatButton(); }, { threshold: .15 }).observe($('rsvp'));
   addEventListener('scroll', floatButton, { passive: true });
   float.addEventListener('click', () => {
-    if (window.__lenis) window.__lenis.scrollTo('#rsvp', { offset: -24, duration: 1.6 });
-    else $('rsvp').scrollIntoView({ behavior: still ? 'auto' : 'smooth' });
+    $('rsvp').scrollIntoView({ behavior: still ? 'auto' : 'smooth' });
   });
 
   const remeasure = () => { if (window.ScrollTrigger) requestAnimationFrame(() => ScrollTrigger.refresh()); };
@@ -301,11 +300,6 @@
   gsap.registerPlugin(ScrollTrigger);
   ScrollTrigger.config({ ignoreMobileResize: true });
 
-  // Smooth wheel scrolling on desktop; phones keep their own native scroll.
-  const lenis = window.__lenis = new Lenis({ lerp: .09, syncTouch: false });
-  lenis.on('scroll', ScrollTrigger.update);
-  gsap.ticker.add(t => lenis.raf(t * 1000));
-  gsap.ticker.lagSmoothing(0);
 
   const HIDE = 'inset(-40% 102% -60% -12%)', SHOW = 'inset(-40% -12% -60% -12%)';
   const write = (el, vars) => gsap.fromTo(el, { clipPath: HIDE }, { clipPath: SHOW, ease: 'power2.inOut', ...vars });
@@ -373,37 +367,69 @@
     gsap.fromTo(card.querySelector('.card-shade'), { opacity: 0 }, { opacity: .6, ease: 'none', scrollTrigger: { trigger: next, ...range } });
   });
 
-  // Each chapter opens on a title screen. As the card arrives the number tracks in, a rule draws across,
-  // and the title writes itself large over a faint numeral. Scrolling on, the title screen drifts up and fades
-  // behind the chapter it introduced.
+  // Each chapter arrives on its title alone: the number tracks in, a rule draws, the title writes itself.
+  // It holds for a beat, fades away, and the story rises in on the same screen.
+  document.documentElement.classList.add('has-intros');
   document.querySelectorAll('#chapters .card').forEach(card => {
     const intro = card.querySelector('.chapter-intro');
     if (!intro) return;
-    const num = intro.querySelector('.intro-num'), rule = intro.querySelector('.intro-rule'),
-      title = intro.querySelector('.write'), numeral = intro.querySelector('.intro-numeral');
-    gsap.set(title, { clipPath: HIDE });
+    const num = intro.querySelector('.intro-num'), rule = intro.querySelector('.intro-rule'), title = intro.querySelector('.write');
+    const story = card.id === 'chOne' ? $('chOneText').children : card.querySelectorAll('.chapter-text > *');
     const track = k => parseFloat(getComputedStyle(num).fontSize) * k + 'px'; // GSAP mis-converts em letter-spacing, so use px
-    gsap.set(num, { autoAlpha: 0, letterSpacing: track(.8) });
+    gsap.set(title, { clipPath: HIDE });
+    gsap.set(num, { autoAlpha: 0, letterSpacing: track(.7) });
     gsap.set(rule, { scaleX: 0 });
-    gsap.timeline({ scrollTrigger: { trigger: card, start: () => flowTop(card) - innerHeight * .5, once: true, invalidateOnRefresh: true } })
-      .to(num, { autoAlpha: 1, letterSpacing: track(.32), duration: 2, ease: 'expo.out' }, 0)
-      .to(rule, { scaleX: 1, duration: 1.8, ease: 'expo.inOut' }, .3)
-      .to(title, { clipPath: SHOW, duration: 2.8, ease: 'power2.inOut' }, .7);
-    const arrive = { trigger: card, start: () => flowTop(card) - innerHeight, end: () => flowTop(card), scrub: true, invalidateOnRefresh: true };
-    gsap.fromTo(numeral, { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 1.25, opacity: 0 }, { scale: 1, opacity: .06, ease: 'none', scrollTrigger: arrive });
-    const leave = { trigger: card, start: () => flowTop(card), end: () => flowTop(card) + intro.offsetHeight, scrub: true, invalidateOnRefresh: true };
-    gsap.fromTo(intro.children, { y: 0, autoAlpha: 1 }, { y: () => -innerHeight * .18, autoAlpha: 0, ease: 'none', immediateRender: false, scrollTrigger: leave });
+    gsap.set(story, { autoAlpha: 0, y: 24 });
+    const show = gsap.timeline({ paused: true })
+      .to(num, { autoAlpha: 1, letterSpacing: track(.32), duration: .9, ease: 'expo.out' }, 0)
+      .to(rule, { scaleX: 1, duration: .9, ease: 'expo.inOut' }, .1)
+      .to(title, { clipPath: SHOW, duration: 1.3, ease: 'power2.inOut' }, .25)
+      .to(intro, { autoAlpha: 0, duration: .7, ease: 'power2.inOut' }, 2.6)
+      .to(story, { autoAlpha: 1, y: 0, duration: 1.1, stagger: .1, ease: 'expo.out' }, 2.95);
+    // Chapter one: the photograph settles into its frame and warms to colour as the story appears.
+    if (card.id === 'chOne') show
+      .fromTo('#chOneFrame img', { scale: 1.2 }, { scale: 1, duration: 2.2, ease: 'expo.out' }, 2.75)
+      .fromTo('#chOneFrame .tone', { opacity: 1 }, { opacity: 0, duration: 1.8, ease: 'power1.inOut' }, 2.75);
+    ScrollTrigger.create({ trigger: card, start: () => flowTop(card) - innerHeight * .25, once: true, invalidateOnRefresh: true, onEnter: () => show.play() });
   });
 
-  // Chapter one: as its story screen comes up, the photograph settles into its frame and warms to colour.
-  {
-    const pinTop = () => flowTop($('chOne')) + $('chOne').querySelector('.chapter-intro').offsetHeight;
-    const range = { trigger: '#chOne', start: () => pinTop() - innerHeight, end: () => pinTop(), scrub: true, invalidateOnRefresh: true };
-    gsap.fromTo('#chOneFrame img', { scale: 1.25 }, { scale: 1, ease: 'none', scrollTrigger: range });
-    gsap.fromTo('#chOneFrame .tone', { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: range });
-    gsap.fromTo('#chOneText > *', { autoAlpha: 0, y: 32 }, { autoAlpha: 1, y: 0, duration: 1.7, stagger: .14, ease: 'expo.out',
-      scrollTrigger: { trigger: '#chOne', start: () => pinTop() - innerHeight * .35, once: true, invalidateOnRefresh: true } });
+  // Scrolling moves one part at a time: however hard the swipe, the next part slides in and settles.
+  // Inside a part taller than the screen (the collage), and from the evening down, scrolling is free.
+  function stops() {
+    const max = ScrollTrigger.maxScroll(window), evening = $('evening').getBoundingClientRect().top + scrollY;
+    const points = [0], zones = [];
+    cards.slice(1).forEach(c => {
+      const top = flowTop(c), extra = Math.max(0, c.offsetHeight - innerHeight);
+      points.push(top);
+      if (extra > 60) { points.push(top + extra); zones.push([top, top + extra]); }
+    });
+    points.push(evening);
+    return { points: points.map(p => Math.min(p, max)), zones, evening, max };
   }
+  // Where the page was resting when the current swipe began.
+  let restY = scrollY, settled = scrollY, moving = false, rest;
+  addEventListener('scroll', () => {
+    if (!moving) { moving = true; settled = restY; }
+    clearTimeout(rest);
+    rest = setTimeout(() => { moving = false; restY = scrollY; }, 350);
+  }, { passive: true });
+  ScrollTrigger.create({
+    start: 0, end: 'max',
+    snap: {
+      snapTo: (progress, self) => {
+        const { points, zones, evening, max } = stops(), y = progress * max, near = (a, b) => Math.abs(a - b) < 6;
+        if (points.some(p => near(p, y))) return progress;
+        const fromPoint = points.some(p => near(p, settled)) || zones.some(([a, b]) => settled > a && settled < b), from = fromPoint ? settled : y; // one part at a time from where the last swipe began
+        const target = self.direction > 0 ? points.find(p => p > from + 6) : [...points].reverse().find(p => p < from - 6);
+        if (target === undefined) return progress;
+        const overshot = fromPoint && (self.direction > 0 ? y > target : y < target); // a hard swipe that flew past the next part
+        if (!overshot && (y > evening + 4 || zones.some(([a, b]) => y > a + 4 && y < b - 4))) return progress;
+        if (settled > evening + 4 && y > evening + 4) return progress;
+        return target / max;
+      },
+      duration: { min: .45, max: 1 }, delay: .05, ease: 'power3.inOut', inertia: false,
+    },
+  });
 
   // Chapter two: each print is laid on the table as it arrives, swinging into its angle, in quick succession.
   // Then, while it passes, the photograph inside settles and warms from oxblood to full colour.
