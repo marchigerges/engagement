@@ -373,13 +373,36 @@
     gsap.fromTo(card.querySelector('.card-shade'), { opacity: 0 }, { opacity: .6, ease: 'none', scrollTrigger: { trigger: next, ...range } });
   });
 
-  // Chapter one: as its card slides up, the photograph settles into its frame and warms to colour.
+  // Each chapter opens on a title screen. As the card arrives the number tracks in, a rule draws across,
+  // and the title writes itself large over a faint numeral. Scrolling on, the title screen drifts up and fades
+  // behind the chapter it introduced.
+  document.querySelectorAll('#chapters .card').forEach(card => {
+    const intro = card.querySelector('.chapter-intro');
+    if (!intro) return;
+    const num = intro.querySelector('.intro-num'), rule = intro.querySelector('.intro-rule'),
+      title = intro.querySelector('.write'), numeral = intro.querySelector('.intro-numeral');
+    gsap.set(title, { clipPath: HIDE });
+    const track = k => parseFloat(getComputedStyle(num).fontSize) * k + 'px'; // GSAP mis-converts em letter-spacing, so use px
+    gsap.set(num, { autoAlpha: 0, letterSpacing: track(.8) });
+    gsap.set(rule, { scaleX: 0 });
+    gsap.timeline({ scrollTrigger: { trigger: card, start: () => flowTop(card) - innerHeight * .5, once: true, invalidateOnRefresh: true } })
+      .to(num, { autoAlpha: 1, letterSpacing: track(.32), duration: 2, ease: 'expo.out' }, 0)
+      .to(rule, { scaleX: 1, duration: 1.8, ease: 'expo.inOut' }, .3)
+      .to(title, { clipPath: SHOW, duration: 2.8, ease: 'power2.inOut' }, .7);
+    const arrive = { trigger: card, start: () => flowTop(card) - innerHeight, end: () => flowTop(card), scrub: true, invalidateOnRefresh: true };
+    gsap.fromTo(numeral, { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 1.25, opacity: 0 }, { scale: 1, opacity: .06, ease: 'none', scrollTrigger: arrive });
+    const leave = { trigger: card, start: () => flowTop(card), end: () => flowTop(card) + intro.offsetHeight, scrub: true, invalidateOnRefresh: true };
+    gsap.fromTo(intro.children, { y: 0, autoAlpha: 1 }, { y: () => -innerHeight * .18, autoAlpha: 0, ease: 'none', immediateRender: false, scrollTrigger: leave });
+  });
+
+  // Chapter one: as its story screen comes up, the photograph settles into its frame and warms to colour.
   {
-    const range = { trigger: '#chOne', start: () => flowTop($('chOne')) - innerHeight, end: () => flowTop($('chOne')), scrub: true, invalidateOnRefresh: true };
+    const pinTop = () => flowTop($('chOne')) + $('chOne').querySelector('.chapter-intro').offsetHeight;
+    const range = { trigger: '#chOne', start: () => pinTop() - innerHeight, end: () => pinTop(), scrub: true, invalidateOnRefresh: true };
     gsap.fromTo('#chOneFrame img', { scale: 1.25 }, { scale: 1, ease: 'none', scrollTrigger: range });
     gsap.fromTo('#chOneFrame .tone', { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: range });
     gsap.fromTo('#chOneText > *', { autoAlpha: 0, y: 32 }, { autoAlpha: 1, y: 0, duration: 1.7, stagger: .14, ease: 'expo.out',
-      scrollTrigger: { trigger: '#chOne', start: () => flowTop($('chOne')) - innerHeight * .35, once: true, invalidateOnRefresh: true } });
+      scrollTrigger: { trigger: '#chOne', start: () => pinTop() - innerHeight * .35, once: true, invalidateOnRefresh: true } });
   }
 
   // Chapter two: each print is laid on the table as it arrives, swinging into its angle, in quick succession.
@@ -397,8 +420,6 @@
     gsap.fromTo(f.querySelector('.tone'), { opacity: .85 }, { opacity: 0, ease: 'none', scrollTrigger: { ...range, end: 'center 55%' } });
   });
 
-  // Chapter three: the title writes itself.
-  write('#chThree .write', { duration: 2.4, scrollTrigger: { trigger: '#chThree .chapter-head', start: 'top 78%', once: true } });
 
   // The evening: heading writes on, the rest rises in, one part after another.
   write('#evening .write', { duration: 2.4, scrollTrigger: { trigger: '#evening h2', start: 'top 80%', once: true } });
