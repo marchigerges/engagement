@@ -292,7 +292,7 @@
     $('sentLine').innerHTML = (rsvp.email ? 'A confirmation is on its way to <span class="as-typed">' + esc(rsvp.email) + '</span>. ' : 'Thank you for letting us know. ') + 'Need to change something? Message Salwa or Marchi.';
     $('sent').hidden = false;
     remeasure();
-    if (animate && !still) gsap.from('#sent > *', { autoAlpha: 0, y: 24, duration: 1.1, stagger: .1, ease: 'expo.out' });
+    if (animate && !still) gsap.from('#sent > *', { autoAlpha: 0, y: 24, duration: 1.6, stagger: .16, ease: 'expo.out' });
   }
 
   /* ---------- The film ---------- */
@@ -321,7 +321,7 @@
   function playOpening() {
     const r = $('shotGreet').getBoundingClientRect(), dy = innerHeight / 2 - (r.top + r.height / 2);
     const big = Math.min(1.35, (innerWidth - 32) / ($('greeting').offsetWidth || 1)); // larger while it is alone, but never wider than the screen
-    gsap.timeline({ defaults: { ease: 'power2.inOut' } })
+    gsap.timeline({ defaults: { ease: 'power2.inOut' } }).timeScale(.7) // everything in the opening plays at 70% speed
       .fromTo('#shotGreet', { autoAlpha: 0, y: dy + 18, scale: big }, { autoAlpha: 1, y: dy, duration: 1, ease: 'expo.out' }, 0)
       .to('#shotGreet', { y: 0, scale: 1, duration: 1.4, ease: 'expo.inOut' }, 1.7)
       .to('#stagePhoto', { opacity: 1, scale: 1, duration: 3, ease: 'power2.out' }, 1.8)
@@ -378,7 +378,7 @@
     const range = { trigger: '#chOne', start: () => flowTop($('chOne')) - innerHeight, end: () => flowTop($('chOne')), scrub: true, invalidateOnRefresh: true };
     gsap.fromTo('#chOneFrame img', { scale: 1.25 }, { scale: 1, ease: 'none', scrollTrigger: range });
     gsap.fromTo('#chOneFrame .tone', { opacity: 1 }, { opacity: 0, ease: 'none', scrollTrigger: range });
-    gsap.fromTo('#chOneText > *', { autoAlpha: 0, y: 32 }, { autoAlpha: 1, y: 0, duration: 1.2, stagger: .09, ease: 'expo.out',
+    gsap.fromTo('#chOneText > *', { autoAlpha: 0, y: 32 }, { autoAlpha: 1, y: 0, duration: 1.7, stagger: .14, ease: 'expo.out',
       scrollTrigger: { trigger: '#chOne', start: () => flowTop($('chOne')) - innerHeight * .35, once: true, invalidateOnRefresh: true } });
   }
 
@@ -389,7 +389,7 @@
   gsap.set(prints, { autoAlpha: 0, y: 110, scale: 1.06, rotation: (i, f) => tilt(f) + (i % 2 ? 9 : -9) });
   ScrollTrigger.batch(prints, {
     start: 'top 92%', once: true,
-    onEnter: batch => gsap.to(batch, { autoAlpha: 1, y: 0, scale: 1, rotation: (i, f) => tilt(f), duration: 1.3, stagger: .14, ease: 'expo.out', overwrite: true }),
+    onEnter: batch => gsap.to(batch, { autoAlpha: 1, y: 0, scale: 1, rotation: (i, f) => tilt(f), duration: 1.9, stagger: .22, ease: 'expo.out', overwrite: true }),
   });
   prints.forEach(f => {
     const range = { trigger: f, start: 'top bottom', end: 'bottom 45%', scrub: true };
@@ -398,23 +398,23 @@
   });
 
   // Chapter three: the title writes itself.
-  write('#chThree .write', { duration: 1.6, scrollTrigger: { trigger: '#chThree .chapter-head', start: 'top 78%', once: true } });
+  write('#chThree .write', { duration: 2.4, scrollTrigger: { trigger: '#chThree .chapter-head', start: 'top 78%', once: true } });
 
   // The evening: heading writes on, the rest rises in, one part after another.
-  write('#evening .write', { duration: 1.6, scrollTrigger: { trigger: '#evening h2', start: 'top 80%', once: true } });
-  write('#faq .write', { duration: 1.4, scrollTrigger: { trigger: '#faq h2', start: 'top 82%', once: true } });
+  write('#evening .write', { duration: 2.4, scrollTrigger: { trigger: '#evening h2', start: 'top 80%', once: true } });
+  write('#faq .write', { duration: 2.2, scrollTrigger: { trigger: '#faq h2', start: 'top 82%', once: true } });
 
   // Everything marked data-rise arrives once, its children staggered.
   gsap.utils.toArray('[data-rise]').forEach(el => {
     const parts = el.children.length > 1 ? el.children : el;
-    gsap.from(parts, { autoAlpha: 0, y: 32, duration: 1.2, stagger: .09, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
+    gsap.from(parts, { autoAlpha: 0, y: 32, duration: 1.7, stagger: .14, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
   });
 
   // Countdown: the number counts up to today's figure.
   if (daysLeft > 0) {
     const n = { v: 0 };
     gsap.to(n, {
-      v: daysLeft, duration: 1.8, ease: 'power3.out',
+      v: daysLeft, duration: 2.6, ease: 'power3.out',
       onUpdate: () => { $('days').textContent = Math.round(n.v); },
       scrollTrigger: { trigger: '#evening .when', start: 'top 85%', once: true },
     });
