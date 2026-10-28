@@ -23,7 +23,7 @@ __HEAD__
 </head>
 <body>
 <script>
-  fetch(new URL('index.html', location.href))
+  fetch(new URL('index.html', location.href), { cache: 'no-cache' })
     .then(r => r.text())
     .then(html => { document.open(); document.write(html); document.close(); })
     .catch(() => { location.replace(new URL('./', location.href)); });
