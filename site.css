@@ -135,7 +135,7 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 
 /* Every chapter arrives on its title alone, laid over the first screen of the card. The title writes in,
    holds for a beat, then fades away to show the story underneath. Shown only when the script runs it. */
-.chapter-intro { display: none; position: absolute; left: 0; right: 0; top: 0; z-index: 5; height: 100svh; flex-direction: column; align-items: center; justify-content: center; gap: clamp(16px, 3svh, 26px); padding: 0 var(--gutter); text-align: center; background: var(--card-bg); border-radius: inherit; }
+.chapter-intro { display: none; position: absolute; left: 0; right: 0; top: 0; z-index: 5; height: 100vh; height: 100lvh; /* the tallest the screen gets, once the browser bars slide away */ flex-direction: column; align-items: center; justify-content: center; gap: clamp(16px, 3svh, 26px); padding: 0 var(--gutter); text-align: center; background: var(--card-bg); border-radius: inherit; }
 html.has-intros .chapter-intro { display: flex; }
 .intro-num { letter-spacing: .32em; color: var(--ink-dim); }
 .intro-rule { display: block; width: min(34vw, 150px); height: 1px; background: var(--ink); opacity: .45; }
