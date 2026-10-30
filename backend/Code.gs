@@ -243,7 +243,7 @@ function confirmationEmail(guests, song, slug) {
   </td></tr>
   <tr><td style="padding:18px 28px 4px;text-align:center;${sans};font-size:14px;line-height:1.65;color:${ink}">
     <b>${esc(EVENT.venue)}</b><br>${esc(EVENT.address)}<br><span style="color:${soft}">${esc(EVENT.transport)}</span>
-    <div style="margin-top:14px">Canapés and a grazing table, so have something to eat beforehand.</div>
+    <div style="margin-top:14px">Canapés and a grazing table.</div>
     <div style="margin-top:8px;color:${soft};font-size:13px">${EVENT.dress.map(([who, what]) => (who ? `<b>${who}:</b> ` : '') + esc(what)).join('<br>')}</div>
     <div style="margin-top:8px;color:${soft};font-size:13px"><b>Our colours:</b> ${esc(EVENT.colours)}</div>
   </td></tr>
@@ -257,7 +257,7 @@ function confirmationEmail(guests, song, slug) {
 </table></td></tr></table></body></html>`;
 
   const text = [heading, intro, '', coming.length ? 'Your place card' : 'Your reply', ...lines, '']
-    .concat(coming.length ? ['When: ' + EVENT.date, 'Where: ' + EVENT.venue + ', ' + EVENT.address + ' (' + EVENT.transport + ')', 'Food: canapés and a grazing table, so have something to eat beforehand.', 'Dress code: cocktail. ' + EVENT.dress.map(([who, what]) => (who ? who + ': ' : '') + what).join(' '), 'Our colours: ' + EVENT.colours, 'Add to calendar: ' + EVENT.calendar, 'Directions: ' + EVENT.map, ''] : [])
+    .concat(coming.length ? ['When: ' + EVENT.date, 'Where: ' + EVENT.venue + ', ' + EVENT.address + ' (' + EVENT.transport + ')', 'Food: canapés and a grazing table.', 'Dress code: cocktail. ' + EVENT.dress.map(([who, what]) => (who ? who + ': ' : '') + what).join(' '), 'Our colours: ' + EVENT.colours, 'Add to calendar: ' + EVENT.calendar, 'Directions: ' + EVENT.map, ''] : [])
     .concat(['Your invitation: ' + invitation, '', 'Need to change something? Just reply to this email.', '', 'With love,', 'Salwa & Marchi', '', ps]).join('\n');
   return { subject, html, text, attachCalendar: coming.length > 0 };
 }
