@@ -21,8 +21,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Inter+Tight:wght@400;500&display=swap">
-<link rel="stylesheet" href="site.css?v=20261029a">
-<link rel="preload" as="image" href="img/roses.webp" type="image/webp">
+<link rel="stylesheet" href="site.css?v=20261101a">
+<link rel="preload" as="image" href="img/hero.webp" type="image/webp">
 <script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('still');</script>
 </head>
 <body>
@@ -38,7 +38,7 @@
   <div class="stack">
   <section class="opening" id="opening" aria-label="We're getting engaged">
     <div class="stage">
-      <div class="stage-photo" id="stagePhoto"><img src="img/roses.webp" alt="Salwa and Marchi" width="1125" height="1500" fetchpriority="high"><span class="tone" id="stageTone" aria-hidden="true"></span></div>
+      <div class="stage-photo" id="stagePhoto"><img src="img/hero.webp" alt="Salwa and Marchi, cheek to cheek on a dance floor" width="1600" height="1200" fetchpriority="high"><span class="tone" id="stageTone" aria-hidden="true"></span></div>
       <div class="scrim" aria-hidden="true"></div>
       <div class="sheen" aria-hidden="true"></div>
       <div class="shot greet" id="shotGreet"><p class="caps" id="greeting">&nbsp;</p></div>
@@ -89,7 +89,6 @@
       <figure class="frame"><img src="img/boat-wave.webp" alt="Salwa and Marchi on a harbour cruise" width="900" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
       <figure class="frame"><img src="img/wedding.webp" alt="Salwa and Marchi at a wedding" width="675" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
       <figure class="frame"><img src="img/boat-sun.webp" alt="Salwa and Marchi in the afternoon sun on the harbour" width="900" height="1200" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
-      <figure class="frame"><img src="img/dance.webp" alt="Salwa and Marchi dancing at the formal" width="1200" height="900" loading="lazy"><span class="tone" aria-hidden="true"></span></figure>
     </div>
     <span class="card-shade" aria-hidden="true"></span>
   </section>
@@ -115,8 +114,8 @@
       <p class="caps dim" id="countdown"><span id="days">0</span> <span id="daysLabel">days to go</span></p>
     </div>
     <div class="where" data-rise>
-      <p class="caps">La Riviera Restaurant &amp; Bar</p>
-      <p class="caps">170 Phillip St, Sydney NSW 2000</p>
+      <p class="venue">La Riviera Restaurant &amp; Bar</p>
+      <p class="address">170 Phillip St, Sydney NSW 2000</p>
       <p class="caps dim">50m from Martin Place Station</p>
     </div>
     <div class="links" data-rise>
@@ -159,6 +158,7 @@
         </div>
         <p class="caps form-note" id="formNote" aria-live="polite"></p>
         <button class="send" id="send" type="submit" disabled>Send RSVP</button>
+        <p class="caps send-hint" id="sendHint">Choose an answer for everyone to send</p>
         </div>
       </form>
 
@@ -183,10 +183,6 @@
         <p><span class="faq-label caps dim">Our colours</span>We’ll be wearing white and brown, so please keep those for us on the night.</p>
       </details>
       <details>
-        <summary>How do I get there?</summary>
-        <p>La Riviera is at 170 Phillip St, Sydney, 50m from Martin Place Station. The train or a rideshare is easiest. We start at 7pm.</p>
-      </details>
-      <details>
         <summary>Is there parking?</summary>
         <p>There is no free parking near La Riviera, but there are several paid car parks within a short walk. We highly recommend carpooling, or catching the train to Martin Place.</p>
         <p><a href="https://www.google.com/maps/search/parking+near+170+Phillip+St+Sydney+NSW+2000" target="_blank" rel="noopener">Find parking near the venue</a></p>
@@ -208,10 +204,6 @@
         <p>Having you there is more than enough. If you would like to give something, there will be a wishing well on the night.</p>
       </details>
       <details>
-        <summary>I have allergies or dietary needs</summary>
-        <p>Add them to your reply above and we will pass them on to the venue.</p>
-      </details>
-      <details>
         <summary>Can I change my reply?</summary>
         <p>Yes. Message Salwa or Marchi before 31 December and we will update it.</p>
       </details>
@@ -219,6 +211,7 @@
   </section>
 
   <footer class="close">
+    <p class="body close-line">Thank you for being part of our story.</p>
     <p class="caps dim">With love</p>
     <p class="script">Salwa &amp; Marchi</p>
   </footer>
@@ -229,9 +222,9 @@
 <noscript><style>.opening{height:auto;overflow:visible}.stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:64px;padding:96px 0 120px}.shot{position:relative;left:auto;right:auto}.stage-photo{opacity:.3;transform:none}.cue,.rsvp{display:none}</style></noscript>
 
 <script>window.INVITE_API = "https://script.google.com/macros/s/AKfycbyXw-FnCLkgx0gt2g6J_ruytb4UaQPxYEEH2P3NqGbOSZgEBHZpEUOyTbIq98692Am1JQ/exec";</script>
-<script src="guests.js?v=20261029a"></script>
+<script src="guests.js?v=20261101a"></script>
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
-<script src="site.js?v=20261029a"></script>
+<script src="site.js?v=20261101a"></script>
 </body>
 </html>

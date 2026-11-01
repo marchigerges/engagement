@@ -150,9 +150,11 @@
   /* ---------- Reply button: appears once the opening has passed, hides at and after the reply card, and after replying ---------- */
 
   const float = $('replyFloat');
+  let openingDone = still || !window.gsap;
   let rsvpInView = false;
   function floatButton() {
-    const show = !replied && !rsvpInView && scrollY > innerHeight * 1.2 && !$('rsvpForm').hidden && $('rsvp').getBoundingClientRect().top > 0;
+    // Only on the opening screen once it has played: elsewhere it would sit on top of the story text.
+    const show = !replied && !rsvpInView && openingDone && scrollY < innerHeight * .3 && !$('rsvpForm').hidden;
     float.hidden = false;
     float.classList.toggle('show', show);
     float.tabIndex = show ? 0 : -1;
@@ -233,6 +235,7 @@
         row.querySelectorAll('.choice button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
         reveal(row.querySelector('.needs'), answers[i].attending);
         $('send').disabled = answers.some(a => a.attending === null);
+        $('sendHint').hidden = !$('send').disabled;
         $('formNote').textContent = '';
         fitToAnswers();
       });
@@ -316,7 +319,13 @@
   function playOpening() {
     const r = $('shotGreet').getBoundingClientRect(), dy = innerHeight / 2 - (r.top + r.height / 2);
     const big = Math.min(1.35, (innerWidth - 32) / ($('greeting').offsetWidth || 1)); // larger while it is alone, but never wider than the screen
-    gsap.timeline({ defaults: { ease: 'power2.inOut' } }).timeScale(.7) // everything in the opening plays at 70% speed
+    // The first visit plays the opening slowly; coming back to the invitation, it plays in a few seconds.
+    let seen = false;
+    try { seen = localStorage.getItem('opening-seen') === '1'; } catch (e) {}
+    gsap.timeline({ defaults: { ease: 'power2.inOut' }, onComplete: () => {
+      openingDone = true; floatButton();
+      try { localStorage.setItem('opening-seen', '1'); } catch (e) {}
+    } }).timeScale(seen ? 2.6 : .7)
       .fromTo('#shotGreet', { autoAlpha: 0, y: dy + 18, scale: big }, { autoAlpha: 1, y: dy, duration: 1, ease: 'expo.out' }, 0)
       .to('#shotGreet', { y: 0, scale: 1, duration: 1.4, ease: 'expo.inOut' }, 1.7)
       .to('#stagePhoto', { opacity: 1, scale: 1, duration: 3, ease: 'power2.out' }, 1.8)
@@ -371,6 +380,7 @@
   // Each chapter arrives on its title alone: the number tracks in, a rule draws, the title writes itself.
   // It holds for a beat, fades away, and the story rises in on the same screen.
   document.documentElement.classList.add('has-intros');
+  if (matchMedia('(pointer: coarse)').matches) $('cue').textContent = 'Swipe up';
   document.querySelectorAll('#chapters .card').forEach(card => {
     const intro = card.querySelector('.chapter-intro');
     if (!intro) return;
@@ -463,7 +473,13 @@
   }, { passive: false });
   // A flick that coasts out of a tall part and stops between parts glides on to the next part.
   let lastY = scrollY, lastDir = 1, idle;
+  const paper = () => {
+    const { stops, evening } = parts();
+    document.documentElement.classList.toggle('on-paper', scrollY > stops[1] - innerHeight * .5 && scrollY < evening - innerHeight * .5);
+  };
+  paper();
   addEventListener('scroll', () => {
+    paper();
     if (scrollY !== lastY) lastDir = scrollY > lastY ? 1 : -1;
     // Momentum or a big wheel turn that carries out of a tall part stops at its edge; the next swipe turns the page.
     if (!turning) {
