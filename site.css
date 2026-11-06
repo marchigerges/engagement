@@ -287,3 +287,18 @@ html.still .cue { display: none; }
   .ch-one .body { font-size: clamp(1.1rem, .7rem + .55vw, 1.3rem); line-height: 1.6; }
   .scatter { width: min(100%, 720px); }
 }
+
+/* ---------- The envelope: the first thing a guest sees; tapping it opens the invitation (envelope.js, site.js) ---------- */
+.envelope{position:fixed;inset:0;z-index:60;cursor:pointer;--paper:#efe3d0;--paper-d:#e6d6bf;--ink:#5a0a0a;background:var(--paper);overflow:hidden;perspective:1400px}
+.envelope::before{content:"";position:absolute;inset:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .25  0 0 0 0 .15  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");pointer-events:none;z-index:9}
+.env-art{position:absolute;inset:0;width:100%;height:100%}
+.emboss{filter:drop-shadow(-.8px -.8px 0 rgba(255,250,240,.9)) drop-shadow(1px 1.3px .6px rgba(110,80,45,.38))}
+.env-flap{position:absolute;left:0;right:0;top:0;height:52%;transform-origin:50% 0;z-index:3}
+.env-name{position:absolute;left:10%;right:10%;top:calc(var(--fy) * .52);transform:translateY(-50%);text-align:center;font-family:'Pinyon Script',cursive;color:var(--ink);font-size:clamp(2.2rem,10.5vw,3.6rem);line-height:1.08;z-index:4;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.env-seal{position:absolute;left:50%;top:var(--py);width:clamp(96px,27vw,130px);aspect-ratio:1;transform:translate(-50%,-50%);z-index:5;border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(0 6px 8px rgba(60,10,0,.35))}
+.env-seal svg{width:100%;height:100%;display:block}
+.env-foot{position:absolute;left:0;right:0;bottom:4.5%;text-align:center;font-family:'Pinyon Script',cursive;color:var(--ink);opacity:.85;font-size:clamp(1.7rem,7vw,2.4rem);z-index:4}
+.env-hint{position:absolute;left:0;right:0;top:calc(var(--py) + clamp(68px,18vw,88px));text-align:center;font:500 .66rem/1 'Inter Tight',sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--ink);opacity:.6;z-index:4;animation:hint 2.6s ease-in-out infinite}
+@keyframes hint{50%{opacity:.25}}
+html.sealed, html.sealed body { overflow: hidden; }
+.envelope[hidden] { display: none; }

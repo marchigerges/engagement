@@ -75,6 +75,7 @@
   let invite = null;
 
   function lock() {
+    $('envelope').hidden = true; document.documentElement.classList.remove('sealed');
     $('locked').hidden = false;
     $('film').hidden = true;
   }
@@ -83,8 +84,37 @@
   // The opening waits (briefly) for the guest's name, since it is the first thing on screen.
   let nameReady;
   const named = new Promise(r => { nameReady = r; });
-  const greet = names => { $('greeting').textContent = 'Dear ' + joinNames(names.map(firstName)); nameReady(); };
+  const greet = names => { $('greeting').textContent = 'Dear ' + joinNames(names.map(firstName)); $('envName').textContent = joinNames(names.map(firstName)); nameReady(); };
   let greeted = false;
+
+  /* ---------- The envelope: shown first, opened with a tap ---------- */
+
+  let openedResolve;
+  const opened = new Promise(r => { openedResolve = r; });
+  if (slug && window.Envelope) {
+    $('envelope').hidden = false;
+    document.documentElement.classList.add('sealed');
+    Envelope.draw();
+    addEventListener('resize', () => { if (!$('envelope').hidden) Envelope.draw(); });
+    let opening = false;
+    const open = () => {
+      if (opening) return;
+      opening = true;
+      const done = () => { $('envelope').hidden = true; document.documentElement.classList.remove('sealed'); };
+      scrollTo(0, 0);
+      openedResolve();
+      if (still || !window.gsap) return done();
+      gsap.timeline({ onComplete: done })
+        .to('#envHint', { autoAlpha: 0, duration: .3 }, 0)
+        .to('#envSeal', { scale: 1.08, duration: .18, ease: 'power2.out' }, 0)
+        .to('#envSeal', { scale: .2, rotation: -25, autoAlpha: 0, duration: .55, ease: 'power3.in' }, .18)
+        .to('#envName', { autoAlpha: 0, y: -20, duration: .5, ease: 'power2.in' }, .3)
+        .to('#flap', { scaleY: -.15, transformOrigin: '50% 0%', duration: .9, ease: 'power3.inOut' }, .45)
+        .to('#envelope', { yPercent: 100, duration: 1.1, ease: 'expo.inOut' }, 1.1);
+    };
+    $('envelope').addEventListener('click', open);
+    $('envelope').addEventListener('touchmove', e => e.preventDefault(), { passive: false }); // the page behind must not scroll
+  } else openedResolve();
 
   function load() {
     $('rsvpStatus').hidden = false;
@@ -98,7 +128,7 @@
       $('rsvpStatus').hidden = true;
       renderRsvp();
     }).catch(() => {
-      if (!invite) { $('greeting').textContent = 'Dear friends'; nameReady(); }
+      if (!invite) { $('greeting').textContent = 'Dear friends'; $('envName').textContent = 'For you'; nameReady(); }
       $('rsvpStatusText').textContent = 'We couldn’t load your reply card. Check your connection and try again.';
       $('rsvpRetry').hidden = false;
     });
@@ -338,7 +368,8 @@
       .to('#cue', { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out' }, 5.6);
   }
   // Start as soon as the name is known; if the name is slow, start anyway after a moment.
-  Promise.race([named, new Promise(r => setTimeout(r, 1500))]).then(() => setTimeout(playOpening, 250));
+  // ...and once the envelope has been opened.
+  Promise.all([Promise.race([named, new Promise(r => setTimeout(r, 1500))]), opened]).then(() => setTimeout(playOpening, 900));
 
   /* ---------- The stack: each card holds while the next slides over it ---------- */
 
@@ -430,6 +461,7 @@
   }
   window.__glide = y => glide(y, 1.4); // the RSVP button
   function turn(dir) {
+    if (document.documentElement.classList.contains('sealed')) return;
     const { stops } = parts(), y = scrollY;
     const target = dir > 0 ? stops.find(p => p > y + 2) : [...stops].reverse().find(p => p < y - 2);
     if (target !== undefined) glide(target);
