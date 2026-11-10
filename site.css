@@ -96,6 +96,13 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 .shot.names .caps { max-width: 28ch; }
 /* On a tall phone screen, a window between the title and our names, so our faces show between the words. */
 @media (max-aspect-ratio: 1/1) { .shot.names { margin-top: 13svh; } }
+/* Short phone screens (iPhone SE, mini, or any phone with its browser bars showing): tighten the opening so the
+   date never meets the RSVP button, and drop the swipe cue, which has no room there. */
+@media (max-aspect-ratio: 1/1) and (max-height: 700px) {
+  .stage { gap: clamp(18px, 4svh, 40px); }
+  .shot.names { margin-top: 7svh; }
+  .cue { display: none; }
+}
 .cue { position: absolute; left: 0; right: 0; bottom: max(28px, env(safe-area-inset-bottom)); text-align: center; color: var(--ink-dim); }
 .cue::after { content: ""; display: block; width: 1px; height: 34px; margin: 12px auto 0; background: var(--ink-faint); transform-origin: 50% 0; animation: cue 2.4s var(--ease-out) infinite; }
 @keyframes cue { 0% { transform: scaleY(0); } 55% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
@@ -105,6 +112,8 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 .chapter-head { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .chapter-head .script { font-size: clamp(3.3rem, 14vw, 6.2rem); line-height: 1; }
 .chapter-text { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+/* Running story text reads left-aligned; titles and short lines stay centred. */
+.chapter .chapter-text .body { text-align: left; width: 100%; }
 .frame { position: relative; overflow: hidden; background: var(--red-deep); margin: 0; }
 .frame img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -201,7 +210,7 @@ html.has-intros .chapter-intro { display: flex; }
 .field label { color: var(--ink-dim); }
 .select, .notes, .line {
   width: min(100%, 300px); background: transparent; border: 0; border-bottom: 1px solid var(--ink-faint); border-radius: 0;
-  padding: 10px 4px; text-align: center; text-align-last: center; font-size: 1rem; color: var(--ink);
+  padding: 10px 4px; text-align: center; text-align-last: center; font-size: 1rem; color: var(--ink); min-height: 44px;
 }
 .select {
   appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 28px; padding-left: 28px;
@@ -219,7 +228,7 @@ html.has-intros .chapter-intro { display: flex; }
 }
 .send:active { transform: scale(.98); }
 .send[disabled] { opacity: .5; cursor: default; }
-.send-hint { margin-top: -6px; font-size: .62rem; color: var(--ink-dim); }
+.send-hint { margin-top: -6px; font-size: .72rem; color: var(--ink-dim); }
 .form-note { min-height: 1.7em; color: var(--ink-dim); max-width: 32ch; }
 .sent { display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .sent .script { font-size: clamp(3.6rem, 16vw, 5rem); }

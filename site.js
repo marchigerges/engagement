@@ -338,7 +338,9 @@
       .to('#cue', { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out' }, 5.6);
   }
   // Start as soon as the name is known; if the name is slow, start anyway after a moment.
-  Promise.race([named, new Promise(r => setTimeout(r, 1500))]).then(() => setTimeout(playOpening, 250));
+  // The title is handwritten in a web font: wait for it (briefly), so it never writes itself in a fallback face.
+  const fontsIn = document.fonts ? Promise.race([document.fonts.load('1em "Pinyon Script"'), new Promise(r => setTimeout(r, 2500))]) : Promise.resolve();
+  Promise.all([Promise.race([named, new Promise(r => setTimeout(r, 1500))]), fontsIn]).then(() => setTimeout(playOpening, 250));
 
   /* ---------- The stack: each card holds while the next slides over it ---------- */
 
