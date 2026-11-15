@@ -127,7 +127,7 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
 /* Chapter two: the years as a collage of prints, laid on the table at slight angles and overlapping.
    Positions are fractions of the collage's own width, so it holds its shape at any size. */
 .ch-two { padding-block: clamp(72px, 12svh, 120px) clamp(140px, 24svh, 220px); /* breathing room after the last photo */ display: flex; flex-direction: column; align-items: center; gap: 22px; }
-.scatter { position: relative; width: min(100%, 560px); aspect-ratio: 1 / 3.0; margin-top: clamp(40px, 7svh, 72px); }
+.scatter { position: relative; width: min(100%, 560px); aspect-ratio: 1 / 3.5; margin-top: clamp(40px, 7svh, 72px); }
 .scatter .frame {
   position: absolute; width: var(--w); left: var(--x); top: var(--y); transform: rotate(var(--r));
   border: clamp(4px, 1.3vw, 8px) solid #fff; background: #fff; will-change: transform;
@@ -135,15 +135,16 @@ html.light-chapters .card { box-shadow: 0 -18px 40px -16px rgba(25, 0, 0, .35); 
   transition: translate .6s var(--ease-out), box-shadow .6s var(--ease-out);
 }
 .scatter .frame img { height: auto; display: block; }
-.scatter .frame:nth-child(1)  { --w: 50%; --x: 3%;  --y: 0%;    --r: -4deg; }
-.scatter .frame:nth-child(2)  { --w: 48%; --x: 50%; --y: 6.7%; --r: 3deg; }
-.scatter .frame:nth-child(3)  { --w: 46%; --x: 20%; --y: 19.3%; --r: -1.5deg; }
-.scatter .frame:nth-child(4)  { --w: 34%; --x: 62%; --y: 26.7%; --r: 4deg; }
-.scatter .frame:nth-child(5)  { --w: 36%; --x: 6%;  --y: 36%; --r: -3deg; }
-.scatter .frame:nth-child(6)  { --w: 56%; --x: 38%; --y: 46.7%; --r: 2.5deg; }
-.scatter .frame:nth-child(7)  { --w: 44%; --x: 52%; --y: 58.7%; --r: 3deg; }
-.scatter .frame:nth-child(8)  { --w: 32%; --x: 8%;  --y: 60.7%; --r: -3.5deg; }
-.scatter .frame:nth-child(9)  { --w: 46%; --x: 34%; --y: 76.7%; --r: 1.5deg; }
+.scatter .frame:nth-child(1)  { --w: 50%; --x: 3%;  --y: 0.0%;    --r: -4deg; }
+.scatter .frame:nth-child(2)  { --w: 48%; --x: 50%; --y: 5.7%; --r: 3deg; }
+.scatter .frame:nth-child(3)  { --w: 46%; --x: 20%; --y: 16.5%; --r: -1.5deg; }
+.scatter .frame:nth-child(4)  { --w: 34%; --x: 62%; --y: 22.9%; --r: 4deg; }
+.scatter .frame:nth-child(5)  { --w: 36%; --x: 6%;  --y: 30.9%; --r: -3deg; }
+.scatter .frame:nth-child(6)  { --w: 56%; --x: 38%; --y: 40.0%; --r: 2.5deg; }
+.scatter .frame:nth-child(7)  { --w: 44%; --x: 52%; --y: 50.3%; --r: 3deg; }
+.scatter .frame:nth-child(8)  { --w: 32%; --x: 8%;  --y: 52.0%; --r: -3.5deg; }
+.scatter .frame:nth-child(10) { --w: 44%; --x: 6%;  --y: 79%;  --r: -2deg; }
+.scatter .frame:nth-child(9)  { --w: 46%; --x: 34%; --y: 65.7%; --r: 1.5deg; }
 @media (hover: hover) and (pointer: fine) {
   .scatter .frame:hover { translate: 0 -8px; z-index: 5; box-shadow: 0 2px 4px rgba(40, 0, 0, .14), 0 30px 50px -18px rgba(40, 0, 0, .55); }
 }
