@@ -70,6 +70,15 @@
 
   const firstName = n => (/'s\b/.test(n) ? n : n.split(/\s+/)[0]);
   const joinNames = list => (list.length > 1 ? list.slice(0, -1).join(', ') + ' & ' + list[list.length - 1] : list[0]);
+  // A family invitation (three or more people, all but at most one sharing a surname) is greeted by the family's name.
+  function familyName(names) {
+    if (names.length < 3) return '';
+    const counts = {};
+    names.forEach(n => { const s = n.trim().split(/\s+/).slice(1).join(' '); if (s) counts[s] = (counts[s] || 0) + 1; });
+    const [top, n] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || [];
+    return n >= names.length - 1 ? top : '';
+  }
+  const greeting = names => 'Dear ' + (familyName(names) ? familyName(names) + ' Family' : joinNames(names.map(firstName)));
 
   const slug = readSlug();
   let invite = null;
@@ -83,7 +92,7 @@
   // The opening waits (briefly) for the guest's name, since it is the first thing on screen.
   let nameReady;
   const named = new Promise(r => { nameReady = r; });
-  const greet = names => { $('greeting').textContent = 'Dear ' + joinNames(names.map(firstName)); nameReady(); };
+  const greet = names => { $('greeting').textContent = greeting(names); nameReady(); };
   let greeted = false;
 
   function load() {
@@ -93,7 +102,7 @@
     getInvite(slug).then(r => {
       if (!r.ok) return lock();
       invite = r.invite;
-      if (!greeted || $('greeting').textContent !== 'Dear ' + joinNames(invite.guests.map(firstName))) greet(invite.guests);
+      if (!greeted || $('greeting').textContent !== greeting(invite.guests)) greet(invite.guests);
       greeted = true;
       $('rsvpStatus').hidden = true;
       renderRsvp();
@@ -338,7 +347,9 @@
       .to('#cue', { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out' }, 5.6);
   }
   // Start as soon as the name is known; if the name is slow, start anyway after a moment.
-  Promise.race([named, new Promise(r => setTimeout(r, 1500))]).then(() => setTimeout(playOpening, 250));
+  // The title is handwritten in a web font: wait for it (briefly), so it never writes itself in a fallback face.
+  const fontsIn = document.fonts ? Promise.race([document.fonts.load('1em "Pinyon Script"'), new Promise(r => setTimeout(r, 2500))]) : Promise.resolve();
+  Promise.all([Promise.race([named, new Promise(r => setTimeout(r, 1500))]), fontsIn]).then(() => setTimeout(playOpening, 250));
 
   /* ---------- The stack: each card holds while the next slides over it ---------- */
 
