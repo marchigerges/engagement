@@ -178,16 +178,16 @@ const EVENT = {
   address: '170 Phillip St, Sydney NSW 2000',
   transport: '50m from Martin Place Station',
   dress: [['Ladies', 'Maxi dresses in darker tones.'], ['Gentlemen', 'Tailored suits in darker tones.'], ['', 'Please leave anything bright or summery at home.']],
-  colours: 'We’ll be wearing white and brown, so please keep those for us on the night.',
+  colours: 'We’ll be wearing white, ivory and olive green, so please keep those colours for us on the night.',
   map: 'https://www.google.com/maps/search/?api=1&query=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000',
-  calendar: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Salwa+%26+Marchi%27s+Engagement&dates=20270123T080000Z/20270123T120000Z&location=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000&details=Dress+code%3A+cocktail%2C+in+darker+tones.+Please+avoid+white+and+brown+%28our+colours%29%2C+and+anything+bright+or+summery.',
+  calendar: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Salwa+%26+Marchi%27s+Engagement&dates=20270123T080000Z/20270123T120000Z&location=La+Riviera+Restaurant+%26+Bar%2C+170+Phillip+St%2C+Sydney+NSW+2000&details=Dress+code%3A+cocktail%2C+in+darker+tones.+Please+avoid+white%2C+ivory+and+olive+green+%28our+colours%29%2C+and+anything+bright+or+summery.',
 };
 
 function calendarFile() {
   const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Salwa and Marchi//Engagement//EN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
     'UID:engagement-20270123@salwa-marchi', 'DTSTAMP:20261101T000000Z', 'DTSTART:20270123T080000Z', 'DTEND:20270123T120000Z',
     "SUMMARY:Salwa & Marchi's Engagement", 'LOCATION:La Riviera Restaurant & Bar\\, 170 Phillip St\\, Sydney NSW 2000',
-    'DESCRIPTION:Dress code: cocktail\\, in darker tones. Please avoid white and brown (our colours)\\, and anything bright or summery. 50m from Martin Place Station.', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    'DESCRIPTION:Dress code: cocktail\\, in darker tones. Please avoid white\\, ivory and olive green (our colours)\\, and anything bright or summery. 50m from Martin Place Station.', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
   return Utilities.newBlob(ics, 'text/calendar', 'salwa-marchi-engagement.ics');
 }
 
