@@ -4,6 +4,83 @@
   const still = document.documentElement.classList.contains('still');
   const PARTY = new Date('2027-01-23T19:00:00+11:00');
 
+  /* ---------- Language: English by default; Spanish with ?lang=es (remembered on this device). ---------- */
+
+  const LANG = (() => {
+    const q = new URLSearchParams(location.search).get('lang');
+    try { if (q) localStorage.setItem('lang', q); return (q || localStorage.getItem('lang')) === 'es' ? 'es' : 'en'; }
+    catch (err) { return q === 'es' ? 'es' : 'en'; }
+  })();
+  const ES = LANG === 'es';
+  const t = (en, es) => (ES ? es : en);
+  document.documentElement.lang = ES ? 'es' : 'en-AU';
+  const DIETARY_ES = { None: 'Ninguna', Vegetarian: 'Vegetariana', Vegan: 'Vegana', Pescatarian: 'Pescetariana', 'Gluten free': 'Sin gluten', 'Dairy free': 'Sin lácteos', Halal: 'Halal', Other: 'Otra' };
+  const dietLabel = d => (ES && DIETARY_ES[d]) || d;
+  if (ES) {
+    const set = (sel, html) => document.querySelectorAll(sel).forEach(el => { el.innerHTML = html; });
+    const faq = document.querySelectorAll('.faq details');
+    [
+      ['#locked .caps', 'Esta invitación es privada. Por favor, abrir el enlace personal que recibió.'],
+      ['#shotTitle .were', 'Nos'], ['#shotTitle .eng', 'Comprometemos'],
+      ['#shotNames .caps:not(.facts-line)', 'Nos encantaría celebrarlo en su compañía'],
+      ['#shotNames .facts-line', 'Sábado 23 de enero, 7 pm, La Riviera'],
+      ['#cue', 'Desliza'],
+      ['#chOne .intro-num', 'Capítulo uno'], ['#chOneTitle .write', 'La cita de $50'],
+      ['#chTwo .intro-num', 'Capítulo dos'], ['#chTwoTitle .write', 'Los años que siguieron'],
+      ['#chThree .intro-num', 'Capítulo tres'], ['#chThreeTitle .write', 'La pregunta'],
+      ['#eveningTitle .write', 'La velada'], ['#evening .when > .caps:first-child', 'Sábado'], ['#evening .when .script', '23 de enero 7 pm'],
+      ['#evening .where .caps', 'A 50 m de la estación Martin Place'],
+      ['#evening .links a', 'Ver en el mapa'], ['#calBtn', 'Agregar al calendario'],
+      ['#rsvpTitle', '¿Contamos con su presencia?'], ['#rsvpBy', 'Por favor, responder antes del 31 de diciembre de 2026'],
+      ['#rsvpRetry', 'Intentar de nuevo'], ['label[for="song"]', 'Pedir una canción'], ['#notesLabel', '¿Algo más que debamos saber?'],
+      ['label[for="email"]', 'Correo para la confirmación'], ['#send', 'Enviar respuesta'],
+      ['#sendHint', 'Falta una respuesta por persona para poder enviar'],
+      ['#closedNote', 'Las respuestas cerraron el 31 de diciembre. Si aún necesita responder, escriba a Salwa o Marchi.'],
+      ['#faqTitle .write', 'Bueno saber'], ['.close-line', 'Gracias por ser parte de nuestra historia.'], ['.close .caps', 'Con cariño'],
+      ['#replyFloat', 'Responder'],
+    ].forEach(([sel, html]) => set(sel, html));
+    const chOne = document.querySelectorAll('#chOneText .body');
+    [
+      'Llegué a nuestra primera cita con $50 y demasiada confianza. Antes de Salwa, nunca había ido a un café, nunca había estado en Parramatta y de verdad creía que Oporto era alta cocina.',
+      'El plan era sencillo: dos comidas, postre y el pasaje del tren de ida y vuelta. Pero $10 desaparecieron solo en llegar hasta ella, y pasé el resto de la cita haciendo cuentas en silencio.',
+      'Compartimos un postre, un refresco y mucha agua gratis, y después salimos a caminar por el parque. Yo lo llamé romántico. Al despedirnos conté el cambio, me di cuenta de que no me alcanzaba para volver a casa y salté los torniquetes del tren.',
+      'Aun así, aceptó una segunda cita.',
+    ].forEach((h, i) => { if (chOne[i]) chOne[i].innerHTML = h; });
+    set('#chTwo .chapter-text .body', 'Con los años hemos ido a cumpleaños, bodas, aventuras improvisadas y demasiadas noches largas. En algún momento mi presupuesto mejoró, seguimos compartiendo ese mismo postre, y me di cuenta de que cada uno de esos momentos era mejor con ella.');
+    const chThree = document.querySelectorAll('#chThree .chapter-text .body');
+    chThree[0].innerHTML = 'Después de todo, queda una sola pregunta por hacer. Supe que quería hacerla desde aquel primer postre compartido. Esta vez, sí hice bien el presupuesto.';
+    chThree[1].innerHTML = 'Creo que todos sabemos la respuesta. Al fin y al cabo, esta es la invitación.';
+    const dress = '<span class="caps dim dress-who">Damas</span>Vestidos largos en tonos oscuros.';
+    const facts = document.querySelectorAll('#evening .facts > div');
+    facts[0].innerHTML = '<dt class="caps dim">Código de vestimenta</dt><dd class="caps">Cóctel</dd>'
+      + '<dd class="dress-note">' + dress + '</dd>'
+      + '<dd class="dress-note"><span class="caps dim dress-who">Caballeros</span>Trajes a medida en tonos oscuros.</dd>'
+      + '<dd class="dress-note">Por favor, dejar en casa cualquier prenda llamativa o veraniega.</dd>';
+    const colours = 'Nosotros vestiremos de blanco, marfil y verde oliva, así que les pedimos reservar esos colores para nosotros esa noche.';
+    facts[1].innerHTML = '<dt class="caps dim">Nuestros colores</dt><dd class="dress-note">' + colours + '</dd>';
+    const msg = 'escriba a Salwa o Marchi';
+    [
+      ['¿Qué me pongo?', '<p><span class="faq-label caps dim">Código de vestimenta</span>Cóctel</p><p><span class="faq-label caps dim">Damas</span>Vestidos largos en tonos oscuros.</p><p><span class="faq-label caps dim">Caballeros</span>Trajes a medida en tonos oscuros.</p><p>Por favor, dejar en casa cualquier prenda llamativa o veraniega.</p><p><span class="faq-label caps dim">Nuestros colores</span>' + colours + '</p>'],
+      ['¿Hay estacionamiento?', '<p>No hay estacionamiento gratuito cerca de La Riviera, pero hay varios estacionamientos pagos a pocos pasos. Recomendamos compartir el auto o tomar el tren hasta Martin Place.</p><p><a href="https://www.google.com/maps/search/parking+near+170+Phillip+St+Sydney+NSW+2000" target="_blank" rel="noopener">Buscar estacionamiento cerca del lugar</a></p>'],
+      ['¿Habrá comida?', '<p>Es una velada de cóctel con canapés y una mesa de picoteo, no una cena servida en la mesa.</p>'],
+      ['¿Puedo llevar a alguien más?', '<p>La invitación incluye a todas las personas para quienes reservamos un lugar. Si cree que olvidamos a alguien, ' + msg + '.</p>'],
+      ['¿Pueden ir niños?', '<p>Adoramos a los más pequeños, pero esta es una velada solo para adultos, salvo los niños de la familia que aparecen en la invitación.</p>'],
+      ['¿Debo llevar un regalo?', '<p>Su presencia es más que suficiente. Si desea hacer un regalo, habrá una caja para sobres esa noche.</p>'],
+      ['¿Puedo cambiar mi respuesta?', '<p>Sí. Antes del 31 de diciembre, ' + msg + ' y la actualizamos.</p>'],
+    ].forEach(([q, a], i) => { if (faq[i]) faq[i].innerHTML = '<summary>' + q + '</summary>' + a; });
+    $('song').placeholder = 'Canción y artista';
+    $('email').placeholder = 'nombre@ejemplo.com';
+  }
+  // Language switch: only on devices that have opened a ?lang= link, while Spanish is being tried out.
+  try {
+    if (localStorage.getItem('lang')) {
+      const sw = document.createElement('button');
+      sw.type = 'button'; sw.className = 'lang-switch caps'; sw.textContent = ES ? 'English' : 'Español';
+      sw.addEventListener('click', () => { const u = new URL(location.href); u.searchParams.set('lang', ES ? 'en' : 'es'); location.replace(u); });
+      document.body.appendChild(sw);
+    }
+  } catch (err) { /* no storage: no switch */ }
+
   /* ---------- Backend (Apps Script). Without a URL, a local stand-in with two test invites. ---------- */
 
   const DIETARY = ['None', 'Vegetarian', 'Vegan', 'Pescatarian', 'Gluten free', 'Dairy free', 'Halal', 'Other'];
@@ -28,7 +105,7 @@
       return { ok: true, invite: { guests: MOCK[slug], rsvp: mockReplies[slug] } };
     }
     // text/plain keeps this a simple request, so the browser skips the CORS preflight Apps Script can't answer.
-    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, song, notes, email }) });
+    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ slug, guests, song, notes, email, lang: LANG }) });
     return res.json();
   }
 
@@ -78,7 +155,9 @@
     const [top, n] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || [];
     return n >= names.length - 1 ? top : '';
   }
-  const greeting = names => 'Dear ' + (familyName(names) ? familyName(names) + ' Family' : joinNames(names.map(firstName)));
+  const greeting = names => (familyName(names)
+    ? t('Dear ' + familyName(names) + ' Family', 'Querida familia ' + familyName(names))
+    : t('Dear ', 'Hola ') + joinNames(names.map(firstName)));
 
   const slug = readSlug();
   let invite = null;
@@ -97,7 +176,7 @@
 
   function load() {
     $('rsvpStatus').hidden = false;
-    $('rsvpStatusText').textContent = 'Loading your invitation';
+    $('rsvpStatusText').textContent = t('Loading your invitation', 'Cargando la invitación');
     $('rsvpRetry').hidden = true;
     getInvite(slug).then(r => {
       if (!r.ok) return lock();
@@ -107,8 +186,8 @@
       $('rsvpStatus').hidden = true;
       renderRsvp();
     }).catch(() => {
-      if (!invite) { $('greeting').textContent = 'Dear friends'; nameReady(); }
-      $('rsvpStatusText').textContent = 'We couldn’t load your reply card. Check your connection and try again.';
+      if (!invite) { $('greeting').textContent = t('Dear friends', 'Queridos amigos'); nameReady(); }
+      $('rsvpStatusText').textContent = t('We couldn’t load your reply card. Check your connection and try again.', 'No pudimos cargar la invitación. Revise su conexión e intente de nuevo.');
       $('rsvpRetry').hidden = false;
     });
   }
@@ -126,7 +205,7 @@
   if (daysLeft <= 0) $('countdown').hidden = true;
   else {
     $('days').textContent = daysLeft;
-    $('daysLabel').textContent = daysLeft === 1 ? 'day to go' : 'days to go';
+    $('daysLabel').textContent = daysLeft === 1 ? t('day to go', 'día y contando') : t('days to go', 'días y contando');
   }
 
   /* ---------- Add to calendar (.ics) ---------- */
@@ -215,17 +294,18 @@
 
   // A one-off question for a particular invitation. The answer is saved at the start of the guest's note.
   const FAVOURS = {
-    'matthew-soliman': { q: 'Can you give me a cut before the big night?', options: ['Of course', 'You’re on your own'], label: 'Haircut' },
+    'matthew-soliman': { q: 'Can you give me a cut before the big night?', options: ['Of course', 'You’re on your own'], label: 'Haircut',
+      es: { q: '¿Me harías un corte antes de la gran noche?', options: ['Claro que sí', 'Arréglatelas solo'] } },
   };
   let favourAnswer = '';
   function renderFavour() {
     const f = FAVOURS[slug];
     if (!f) return;
-    $('favourQ').textContent = f.q;
-    $('favourChoice').innerHTML = f.options.map(o => `<button type="button" aria-pressed="false">${o}</button>`).join('');
+    $('favourQ').textContent = ES && f.es ? f.es.q : f.q;
+    $('favourChoice').innerHTML = f.options.map((o, i) => `<button type="button" aria-pressed="false" data-v="${o}">${ES && f.es ? f.es.options[i] : o}</button>`).join('');
     $('favourChoice').addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
-      favourAnswer = b.textContent;
+      favourAnswer = b.dataset.v;
       $('favourChoice').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     });
     $('favourField').hidden = false;
@@ -244,17 +324,17 @@
       row.innerHTML = `
         <p class="name">${name.replace(/[<>&]/g, '')}</p>
         <div class="choice" role="group" aria-label="Is ${name.replace(/[<>&"]/g, '')} coming?">
-          <button type="button" aria-pressed="false" data-v="yes">Coming</button>
-          <button type="button" aria-pressed="false" data-v="no">Can’t make it</button>
+          <button type="button" aria-pressed="false" data-v="yes">${t('Coming', 'Asistirá')}</button>
+          <button type="button" aria-pressed="false" data-v="no">${t('Can’t make it', 'No podrá ir')}</button>
         </div>
         <div class="needs" hidden>
           <div class="field">
-            <label class="caps" for="diet${i}">Dietary needs</label>
-            <select class="select" id="diet${i}">${(invite.dietary || DIETARY).map(d => `<option>${d}</option>`).join('')}</select>
+            <label class="caps" for="diet${i}">${t('Dietary needs', 'Restricciones alimentarias')}</label>
+            <select class="select" id="diet${i}">${(invite.dietary || DIETARY).map(d => `<option value="${d}">${dietLabel(d)}</option>`).join('')}</select>
           </div>
           <div class="field">
-            <label class="caps" for="allergy${i}">Allergies</label>
-            <input class="line" id="allergy${i}" type="text" maxlength="200" placeholder="e.g. peanuts, shellfish" autocomplete="off">
+            <label class="caps" for="allergy${i}">${t('Allergies', 'Alergias')}</label>
+            <input class="line" id="allergy${i}" type="text" maxlength="200" placeholder="${t('e.g. peanuts, shellfish', 'p. ej. maní, mariscos')}" autocomplete="off">
           </div>
         </div>`;
       row.querySelector('.choice').addEventListener('click', e => {
@@ -279,7 +359,7 @@
     const answered = answers.every(a => a.attending !== null);
     const anyoneComing = answers.some(a => a.attending);
     $('songField').hidden = answered && !anyoneComing;
-    $('notesLabel').textContent = answered && !anyoneComing ? 'Leave Salwa & Marchi a message' : 'Anything else we should know?';
+    $('notesLabel').textContent = answered && !anyoneComing ? t('Leave Salwa & Marchi a message', 'Un mensaje para Salwa y Marchi') : t('Anything else we should know?', '¿Algo más que debamos saber?');
     remeasure();
   }
 
@@ -288,14 +368,14 @@
     if (answers.some(a => a.attending === null)) return;
     const send = $('send');
     send.disabled = true;
-    send.textContent = 'Sending';
+    send.textContent = t('Sending', 'Enviando');
     $('formNote').textContent = '';
     const guests = answers.map(a => ({ name: a.name, attending: a.attending, dietary: a.attending ? a.dietary : 'None', allergies: a.attending ? a.allergies.trim() : '' }));
     let r;
     const email = $('email').value.trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      send.disabled = false; send.textContent = 'Send RSVP';
-      $('formNote').textContent = 'Check your email address, or leave it blank.';
+      send.disabled = false; send.textContent = t('Send RSVP', 'Enviar respuesta');
+      $('formNote').textContent = t('Check your email address, or leave it blank.', 'Revise el correo o déjelo en blanco.');
       $('email').focus();
       return;
     }
@@ -305,10 +385,10 @@
     try { r = await sendReply(slug, guests, song, fullNote, email); } catch (err) { r = { ok: false, error: 'network' }; }
     if (r.ok || r.error === 'already_replied') return showSent(r.invite.rsvp, true);
     send.disabled = false;
-    send.textContent = 'Send RSVP';
+    send.textContent = t('Send RSVP', 'Enviar respuesta');
     $('formNote').textContent = r.error === 'closed'
-      ? 'Replies have closed. Please message Salwa or Marchi.'
-      : 'Your reply didn’t send. Check your connection and try again.';
+      ? t('Replies have closed. Please message Salwa or Marchi.', 'Las respuestas ya cerraron. Por favor, escriba a Salwa o Marchi.')
+      : t('Your reply didn’t send. Check your connection and try again.', 'La respuesta no se envió. Revise su conexión e intente de nuevo.');
   });
 
   function showSent(rsvp, animate) {
@@ -317,12 +397,12 @@
     const coming = rsvp.guests.filter(g => g.attending);
     $('rsvpForm').hidden = true;
     $('rsvpBy').hidden = true;
-    $('rsvpTitle').textContent = coming.length ? 'See you there' : 'We’ll miss you';
+    $('rsvpTitle').textContent = coming.length ? t('See you there', '¡Nos vemos allí!') : t('We’ll miss you', 'Los vamos a extrañar');
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-    const needs = g => [g.dietary && g.dietary !== 'None' ? g.dietary.toLowerCase() : '', g.allergies ? 'allergic to ' + esc(g.allergies) : ''].filter(Boolean).join(', ');
-    $('sentList').innerHTML = rsvp.guests.map(g => `<li>${esc(g.name)}: ${g.attending ? 'coming' + (needs(g) ? ', ' + needs(g) : '') : 'can’t make it'}</li>`).join('')
-      + (rsvp.song ? `<li>Song request: ${esc(rsvp.song)}</li>` : '');
-    $('sentLine').innerHTML = (rsvp.email ? 'A confirmation is on its way to <span class="as-typed">' + esc(rsvp.email) + '</span>. ' : 'Thank you for letting us know. ') + 'Need to change something? Message Salwa or Marchi.';
+    const needs = g => [g.dietary && g.dietary !== 'None' ? dietLabel(g.dietary).toLowerCase() : '', g.allergies ? t('allergic to ', 'alergia a ') + esc(g.allergies) : ''].filter(Boolean).join(', ');
+    $('sentList').innerHTML = rsvp.guests.map(g => `<li>${esc(g.name)}: ${g.attending ? t('coming', 'asistirá') + (needs(g) ? ', ' + needs(g) : '') : t('can’t make it', 'no podrá ir')}</li>`).join('')
+      + (rsvp.song ? `<li>${t('Song request', 'Canción pedida')}: ${esc(rsvp.song)}</li>` : '');
+    $('sentLine').innerHTML = (rsvp.email ? t('A confirmation is on its way to ', 'La confirmación va en camino a ') + '<span class="as-typed">' + esc(rsvp.email) + '</span>. ' : t('Thank you for letting us know. ', 'Gracias por avisarnos. ')) + t('Need to change something? Message Salwa or Marchi.', '¿Necesita cambiar algo? Escriba a Salwa o Marchi.');
     $('sent').hidden = false;
     remeasure();
     if (animate && !still) gsap.from('#sent > *', { autoAlpha: 0, y: 24, duration: 1.6, stagger: .16, ease: 'expo.out' });
@@ -412,7 +492,7 @@
   // Each chapter arrives on its title alone: the number tracks in, a rule draws, the title writes itself.
   // It holds for a beat, fades away, and the story rises in on the same screen.
   document.documentElement.classList.add('has-intros');
-  if (matchMedia('(pointer: coarse)').matches) $('cue').textContent = 'Swipe up';
+  if (matchMedia('(pointer: coarse)').matches) $('cue').textContent = t('Swipe up', 'Desliza hacia arriba');
   document.querySelectorAll('#chapters .card').forEach(card => {
     const intro = card.querySelector('.chapter-intro');
     if (!intro) return;
