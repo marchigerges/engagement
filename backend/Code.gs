@@ -3,6 +3,7 @@
  *
  * GET  ?slug=x                -> { ok, invite: { guests, rsvp, open, rsvpBy, dietary } } or { ok: false, error: 'not_found' }
  * POST text/plain JSON { slug, guests: [{ name, attending, dietary, allergies }], song, notes, email }
+ * POST text/plain JSON { kind: 'message', name, message } -> { ok }  (a note from the "with love" page, saved on the Messages tab)
  *      Emails a confirmation to `email` (from the account that deployed the script) when one is given.
  *                             -> { ok, invite }
  *
@@ -34,6 +35,7 @@ function doGet(e) {
 function doPost(e) {
   return respond(() => {
     const body = JSON.parse(e.postData.contents);
+    if (body.kind === 'message') return saveMessage(body);
     const lock = LockService.getScriptLock();
     lock.waitLock(10000);
     try {
@@ -58,6 +60,26 @@ function doPost(e) {
       lock.releaseLock();
     }
   });
+}
+
+/** A note from the "with love" page (relatives who can't be there): one row on the Messages tab. */
+function saveMessage(body) {
+  const name = String(body.name || '').trim().slice(0, 80);
+  const message = String(body.message || '').trim().slice(0, 1500);
+  if (!name || !message) return { ok: false, error: 'invalid' };
+  let s = sheet('Messages');
+  if (!s) {
+    s = SpreadsheetApp.getActive().insertSheet('Messages');
+    s.getRange(1, 1, 1, 3).setValues([['Received', 'From', 'Message']]);
+    s.getRange(1, 1, 1, 3).setFontWeight('bold');
+    s.setFrozenRows(1);
+    s.setColumnWidth(1, 150); s.setColumnWidth(2, 180); s.setColumnWidth(3, 520);
+    s.getRange(1, 3, s.getMaxRows(), 1).setWrap(true);
+  }
+  // A leading = + - @ would be read as a formula; an apostrophe keeps it as text.
+  const safe = v => (/^[=+\-@]/.test(v) ? "'" + v : v);
+  s.appendRow([Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), safe(name), safe(message)]);
+  return { ok: true };
 }
 
 function respond(fn) {

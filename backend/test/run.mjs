@@ -16,6 +16,7 @@ function makeSheet(name, rows) {
     setValues: v => v.forEach((r, i) => r.forEach((x, j) => put(row - 1 + i, col - 1 + j, x))),
     setValue: v => put(row - 1, col - 1, v),
     setFormula: f => put(row - 1, col - 1, f),
+    setFontWeight() { return this; }, setWrap() { return this; },
   });
   const api = {
     name, data,
@@ -25,7 +26,7 @@ function makeSheet(name, rows) {
     getLastColumn: width,
     appendRow: r => { data[api.getLastRow()] = r.slice(); },
     deleteRow: r => data.splice(r - 1, 1),
-    setFrozenRows: () => {},
+    setFrozenRows: () => {}, setColumnWidth: () => {}, getMaxRows: () => 1000,
     clear: () => { data.length = 0; },
   };
   return api;
@@ -203,6 +204,15 @@ ctx.removeInvitation('TEST000001');
 assert.ok(!sheets.Invites.data.some(x => x[0] === 'TEST000001')); assert.ok(!responses.some(x => x[0] === 'TEST000001'));
 r = get({ slug: alex }); assert.equal(r.error, 'not_found');
 console.log('\nclearReply and removeInvitation: ok');
+
+// A message from the "with love" page lands on a new Messages tab
+r = post({ kind: 'message', name: 'Aunty May', message: 'Congratulations, wish we were there!' }); assert.equal(r.ok, true);
+r = post({ kind: 'message', name: '=HACK()', message: '+1' }); assert.equal(r.ok, true);
+r = post({ kind: 'message', name: '', message: 'x' }); assert.equal(r.error, 'invalid');
+assert.deepEqual(sheets.Messages.data[0], ['Received', 'From', 'Message']);
+assert.equal(sheets.Messages.data[1][1], 'Aunty May'); assert.equal(sheets.Messages.data[2][1], "'=HACK()"); assert.equal(sheets.Messages.data[2][2], "'+1");
+assert.equal(sheets.Messages.data.length, 3);
+console.log('\nmessages: ok');
 
 ctx.removeTestGuests();
 assert.ok(!sheets.Invites.data.some(x => /^TEST/.test(x[0])));
