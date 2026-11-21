@@ -205,6 +205,25 @@ assert.ok(!sheets.Invites.data.some(x => x[0] === 'TEST000001')); assert.ok(!res
 r = get({ slug: alex }); assert.equal(r.error, 'not_found');
 console.log('\nclearReply and removeInvitation: ok');
 
+// People tab: one row per person, "none" allergies dropped, Other carries its detail, a reset removes the rows
+{
+  const pjordan = slugOf('TEST000002');
+  ctx.clearReply('TEST000002');
+  let r2 = post({ slug: pjordan, guests: [{ name: 'Jordan Testguest', attending: true, dietary: 'Other', dietaryOther: 'No pork', allergies: 'None' }, { name: 'Sam Plusone', attending: false }] });
+  assert.equal(r2.ok, true);
+  let rows = sheets.People.data.filter(x => x[0] === 'TEST000002');
+  assert.equal(rows.length, 2);
+  assert.equal(JSON.stringify(rows[0].slice(3, 7)), JSON.stringify(['Jordan Testguest', 'Yes', 'Other: No pork', '']));
+  assert.equal(JSON.stringify(rows[1].slice(3, 7)), JSON.stringify(['Sam Plusone', 'No', '', '']));
+  rows[0][9] = 'Peanuts'; rows[0][10] = true; // a host fix
+  ctx.clearReply('TEST000002');
+  assert.equal(sheets.People.data.filter(x => x[0] === 'TEST000002').length, 0, 'reset removes People rows');
+  r2 = post({ slug: pjordan, guests: [{ name: 'Jordan Testguest', attending: true, allergies: 'no allergies.' }, { name: 'Sam Plusone', attending: true }] });
+  rows = sheets.People.data.filter(x => x[0] === 'TEST000002');
+  assert.equal(rows[0][6], ''); assert.equal(rows[1][4], 'Yes');
+  console.log('\npeople: ok');
+}
+
 // A message from the "with love" page lands on a new Messages tab
 r = post({ kind: 'message', name: 'Aunty May', message: 'Congratulations, wish we were there!' }); assert.equal(r.ok, true);
 r = post({ kind: 'message', name: '=HACK()', message: '+1' }); assert.equal(r.ok, true);
@@ -217,4 +236,5 @@ console.log('\nmessages: ok');
 ctx.removeTestGuests();
 assert.ok(!sheets.Invites.data.some(x => /^TEST/.test(x[0])));
 assert.ok(!responses.some(x => /^TEST/.test(x[0])));
+assert.ok(!sheets.People.data.some(x => /^TEST/.test(x[0])));
 console.log('\nremoveTestGuests: test rows gone\n\nALL PASSED');

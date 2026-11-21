@@ -13,6 +13,8 @@
  * Responses tab (created on first run): Code, Slug, one row per invite. The slug is the guest's
  * personal link name (joseph-and-noura). It is generated once; type over it to choose your own.
  * Guest List tab: RSVP / Allergies columns filled per person when a name matches.
+ * People tab: one row per person who has replied (written here). The "Fix" columns and "Severe" are yours:
+ * the script never overwrites them, and the For the venue tab uses a fix in place of what the guest typed.
  */
 
 const TZ = 'Australia/Sydney';
@@ -23,6 +25,10 @@ const RESPONSE_HEADERS = ['Code', 'Slug', 'Guests', 'Status', 'Attending', 'Diet
 // Guest List has two side-by-side tables; columns are 1-based.
 const GUEST_LIST_SIDES = [{ name: 2, rsvp: 3, allergies: 4 }, { name: 8, rsvp: 9, allergies: 10 }];
 const GUEST_LIST_FIRST_ROW = 3;
+const PEOPLE_HEADERS = ['Code', 'Invitation', 'Side', 'Name', 'Coming', 'Dietary', 'Allergies', 'Replied', 'Fix: dietary', 'Fix: allergies', 'Severe'];
+const PEOPLE_OWN = 8; // columns the script writes; the rest are the hosts'
+// "None", "no allergies", "n/a" and the like mean nothing to the venue.
+const NOTHING = /^(none|no|nil|nope|n\/?a|nothing|na|no allerg(y|ies)|none that i know of)[.!\s]*$/i;
 
 function doGet(e) {
   return respond(() => {
@@ -167,8 +173,11 @@ function cleanGuests(input, names) {
   for (let i = 0; i < names.length; i++) {
     const g = input[i] || {};
     if (String(g.name || '').trim() !== names[i] || typeof g.attending !== 'boolean') return null;
-    const dietary = DIETARY.indexOf(g.dietary) >= 0 ? g.dietary : 'None';
-    const allergies = String(g.allergies || '').trim().slice(0, 200);
+    let dietary = DIETARY.indexOf(g.dietary) >= 0 ? g.dietary : 'None';
+    const other = String(g.dietaryOther || '').trim().slice(0, 120);
+    if (dietary === 'Other' && other && !NOTHING.test(other)) dietary = 'Other: ' + other;
+    let allergies = String(g.allergies || '').trim().slice(0, 200);
+    if (NOTHING.test(allergies)) allergies = '';
     out.push({ name: names[i], attending: g.attending, dietary: g.attending ? dietary : 'None', allergies: g.attending ? allergies : '' });
   }
   return out;
@@ -189,6 +198,36 @@ function saveResponse(invite, guests, notes, song, email) {
   if (h['Replied'] !== undefined) inv.getRange(invite.row, h['Replied'] + 1).setValue(status + ' ' + now);
 
   markGuestList(guests);
+  writePeople(invite, guests, now);
+}
+
+/** Replaces this invitation's rows on the People tab, keeping any fixes the hosts typed for those people. */
+function writePeople(invite, guests, when) {
+  const s = peopleSheet();
+  const keep = {};
+  rowsWithCode('People', invite.code).forEach(r => {
+    const row = s.getRange(r, 1, 1, PEOPLE_HEADERS.length).getValues()[0];
+    keep[String(row[3]).trim().toLowerCase()] = row.slice(PEOPLE_OWN);
+    s.deleteRow(r);
+  });
+  const inv = sheet('Invites');
+  const h = headerIndex(inv.getRange(1, 1, 1, inv.getLastColumn()).getValues()[0]);
+  const side = h['Side'] !== undefined ? String(inv.getRange(invite.row, h['Side'] + 1).getValues()[0][0]).trim() : '';
+  guests.forEach(g => {
+    const own = [invite.code, invite.response.slug, side, g.name, g.attending ? 'Yes' : 'No',
+      g.attending && g.dietary !== 'None' ? g.dietary : '', g.attending ? g.allergies : '', when];
+    s.appendRow(own.concat(keep[g.name.toLowerCase()] || ['', '', false]));
+  });
+}
+
+function peopleSheet() {
+  let s = sheet('People');
+  if (!s) {
+    s = SpreadsheetApp.getActive().insertSheet('People');
+    s.getRange(1, 1, 1, PEOPLE_HEADERS.length).setValues([PEOPLE_HEADERS]);
+    s.setFrozenRows(1);
+  }
+  return s;
 }
 
 /* ---------- Confirmation email ---------- */
@@ -442,11 +481,13 @@ function clearReply(code) {
   const inv = sheet('Invites');
   const h = headerIndex(inv.getRange(1, 1, 1, inv.getLastColumn()).getValues()[0]);
   if (h['Replied'] !== undefined) rowsWithCode('Invites', code).forEach(r => inv.getRange(r, h['Replied'] + 1).setValue(''));
+  if (sheet('People')) rowsWithCode('People', code).forEach(r => sheet('People').deleteRow(r));
 }
 
 function removeInvitation(code) {
   rowsWithCode('Responses', code).forEach(r => responsesSheet().deleteRow(r));
   rowsWithCode('Invites', code).forEach(r => sheet('Invites').deleteRow(r));
+  if (sheet('People')) rowsWithCode('People', code).forEach(r => sheet('People').deleteRow(r));
 }
 
 /** Gives every invite a link name, writes each Personal link, and refreshes the To chase tab. Safe to re-run. */
@@ -512,8 +553,9 @@ function addTestGuests() {
 }
 
 function removeTestGuests() {
-  ['Invites', 'Responses'].forEach(name => {
+  ['Invites', 'Responses', 'People'].forEach(name => {
     const s = sheet(name);
+    if (!s) return;
     const codes = s.getRange(1, 1, s.getLastRow(), 1).getValues();
     for (let r = codes.length; r >= 1; r--) if (/^TEST\d+$/.test(codes[r - 1][0])) s.deleteRow(r);
   });
