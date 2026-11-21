@@ -296,7 +296,7 @@
     renderFavour();
     const box = $('guests');
     invite.guests.forEach((name, i) => {
-      answers[i] = { name, attending: null, dietary: 'None', allergies: '' };
+      answers[i] = { name, attending: null, dietary: 'None', dietaryOther: '', allergies: '' };
       const row = document.createElement('div');
       row.className = 'guest';
       row.innerHTML = `
@@ -309,6 +309,7 @@
           <div class="field">
             <label class="caps" for="diet${i}">Dietary needs</label>
             <select class="select" id="diet${i}">${(invite.dietary || DIETARY).map(d => `<option>${d}</option>`).join('')}</select>
+            <input class="line diet-other" id="other${i}" type="text" maxlength="120" placeholder="What is it?" autocomplete="off" aria-label="Other dietary need" hidden>
           </div>
           <div class="field">
             <label class="caps" for="allergy${i}">Allergies</label>
@@ -325,8 +326,15 @@
         $('formNote').textContent = '';
         fitToAnswers();
       });
-      row.querySelector('select').addEventListener('change', e => { answers[i].dietary = e.target.value; });
-      row.querySelector('input').addEventListener('input', e => { answers[i].allergies = e.target.value; });
+      const other = row.querySelector('.diet-other');
+      row.querySelector('select').addEventListener('change', e => {
+        answers[i].dietary = e.target.value;
+        other.hidden = e.target.value !== 'Other';
+        if (!other.hidden) other.focus();
+        remeasure();
+      });
+      other.addEventListener('input', e => { answers[i].dietaryOther = e.target.value; });
+      row.querySelector(`#allergy${i}`).addEventListener('input', e => { answers[i].allergies = e.target.value; });
       box.appendChild(row);
     });
     remeasure();
@@ -348,7 +356,7 @@
     send.disabled = true;
     send.textContent = 'Sending';
     $('formNote').textContent = '';
-    const guests = answers.map(a => ({ name: a.name, attending: a.attending, dietary: a.attending ? a.dietary : 'None', allergies: a.attending ? a.allergies.trim() : '' }));
+    const guests = answers.map(a => ({ name: a.name, attending: a.attending, dietary: a.attending ? a.dietary : 'None', dietaryOther: a.attending && a.dietary === 'Other' ? a.dietaryOther.trim() : '', allergies: a.attending ? a.allergies.trim() : '' }));
     let r;
     const email = $('email').value.trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
