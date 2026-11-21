@@ -162,6 +162,63 @@
   const slug = readSlug();
   let invite = null;
 
+  /* ---------- The "with love" page (/with-love): the story for relatives who can't be there,
+     ending in a message to us instead of the evening details and RSVP. ---------- */
+
+  const AFAR = slug === 'with-love';
+  if (AFAR) {
+    document.title = 'Salwa & Marchi, with love';
+    document.querySelector('#shotNames .caps:not(.facts-line)').textContent = 'We wish you could be there celebrating with us';
+    document.querySelector('#shotNames .facts-line').textContent = 'Sydney, 23 January 2027';
+    document.querySelector('#chThree .aside').textContent = 'I think we all know the answer to this one.';
+    // The original parts stay in the page (hidden), since the rest of the script still wires them up.
+    [...$('evening').children].forEach(el => { el.hidden = true; el.removeAttribute('data-rise'); });
+    $('eveningTitle').removeAttribute('id');
+    $('evening').insertAdjacentHTML('beforeend', `
+      <h2 class="script" id="eveningTitle"><span class="write">From afar</span></h2>
+      <p class="body afar-note" data-rise>We know you can’t be with us on the night, but you are always in our hearts. We would love to hear from you.</p>`);
+    const oldCard = $('rsvp').querySelector('.reply-card');
+    oldCard.hidden = true; oldCard.removeAttribute('data-rise');
+    $('rsvpTitle').removeAttribute('id');
+    $('rsvpForm').hidden = true;
+    $('rsvp').insertAdjacentHTML('beforeend', `
+      <div class="reply-card" data-rise>
+        <h2 class="script" id="rsvpTitle">Leave us a message</h2>
+        <p class="caps dim" id="msgIntro">We’ll read every one together</p>
+        <form id="msgForm" class="rsvp-fields" novalidate>
+          <div class="field">
+            <label class="caps" for="msgName">Your name</label>
+            <input class="line" id="msgName" type="text" maxlength="80" autocomplete="name">
+          </div>
+          <div class="field">
+            <label class="caps" for="msgText">Your message</label>
+            <textarea class="notes" id="msgText" rows="3" maxlength="1500"></textarea>
+          </div>
+          <p class="caps form-note" id="msgNote" aria-live="polite"></p>
+          <button class="send" id="msgSend" type="submit">Send with love</button>
+        </form>
+        <div class="sent" id="msgSent" hidden>
+          <p class="caps">Thank you</p>
+          <p class="caps dim">Your message is on its way to us. It means the world.</p>
+        </div>
+      </div>`);
+    $('faq').hidden = true;
+    $('msgForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = $('msgName').value.trim(), message = $('msgText').value.trim(), send = $('msgSend');
+      if (!name || !message) { $('msgNote').textContent = !name ? 'Please add your name' : 'Please write a message'; return; }
+      send.disabled = true; send.textContent = 'Sending'; $('msgNote').textContent = '';
+      let r;
+      try {
+        r = API ? await (await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ kind: 'message', name, message }) })).json()
+                : (await wait(600), { ok: true });
+      } catch (err) { r = { ok: false }; }
+      if (!r.ok) { send.disabled = false; send.textContent = 'Send with love'; $('msgNote').textContent = 'Your message didn’t send. Check your connection and try again.'; return; }
+      $('msgForm').hidden = true; $('msgIntro').hidden = true; $('msgSent').hidden = false;
+      if (!still && window.gsap) gsap.from('#msgSent > *', { autoAlpha: 0, y: 24, duration: 1.6, stagger: .16, ease: 'expo.out' });
+    });
+  }
+
   function lock() {
     $('locked').hidden = false;
     $('film').hidden = true;
@@ -194,6 +251,7 @@
   $('rsvpRetry').addEventListener('click', load);
 
   if (!slug) lock();
+  else if (AFAR) { $('greeting').textContent = 'To our family, near and far'; nameReady(); }
   else {
     localNames(slug).then(names => { if (names && !greeted) { greet(names); greeted = true; } });
     load();
