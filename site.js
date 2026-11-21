@@ -215,7 +215,7 @@
 
   // A one-off question for a particular invitation. The answer is saved at the start of the guest's note.
   const FAVOURS = {
-    'matthew-soliman': { q: 'Will you give me a fresh cut before the big night?', options: ['Of course', 'You’re on your own'], label: 'Haircut' },
+    'matthew-soliman': { q: 'Can you give me a cut before the big night?', options: ['Of course', 'You’re on your own'], label: 'Haircut' },
   };
   let favourAnswer = '';
   function renderFavour() {
