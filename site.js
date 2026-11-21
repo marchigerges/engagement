@@ -213,10 +213,29 @@
     });
   });
 
+  // A one-off question for a particular invitation. The answer is saved at the start of the guest's note.
+  const FAVOURS = {
+    'matthew-soliman': { q: 'Will you give me a fresh cut before the big night?', options: ['Of course', 'You’re on your own'], label: 'Haircut' },
+  };
+  let favourAnswer = '';
+  function renderFavour() {
+    const f = FAVOURS[slug];
+    if (!f) return;
+    $('favourQ').textContent = f.q;
+    $('favourChoice').innerHTML = f.options.map(o => `<button type="button" aria-pressed="false">${o}</button>`).join('');
+    $('favourChoice').addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      favourAnswer = b.textContent;
+      $('favourChoice').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    });
+    $('favourField').hidden = false;
+  }
+
   function renderRsvp() {
     if (invite.rsvp) return showSent(invite.rsvp);
     if (!invite.open) { $('rsvpForm').hidden = true; $('closedNote').hidden = false; return; }
     $('rsvpFields').hidden = false;
+    renderFavour();
     const box = $('guests');
     invite.guests.forEach((name, i) => {
       answers[i] = { name, attending: null, dietary: 'None', allergies: '' };
@@ -281,7 +300,9 @@
       return;
     }
     const song = guests.some(g => g.attending) ? $('song').value.trim() : '';
-    try { r = await sendReply(slug, guests, song, $('notes').value.trim(), email); } catch (err) { r = { ok: false, error: 'network' }; }
+    const note = $('notes').value.trim(), f = FAVOURS[slug];
+    const fullNote = f && favourAnswer ? (f.label + ': ' + favourAnswer + (note ? '. ' + note : '')) : note;
+    try { r = await sendReply(slug, guests, song, fullNote, email); } catch (err) { r = { ok: false, error: 'network' }; }
     if (r.ok || r.error === 'already_replied') return showSent(r.invite.rsvp, true);
     send.disabled = false;
     send.textContent = 'Send RSVP';
