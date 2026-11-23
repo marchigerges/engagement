@@ -26,7 +26,7 @@ function makeSheet(name, rows) {
     getLastColumn: width,
     appendRow: r => { data[api.getLastRow()] = r.slice(); },
     deleteRow: r => data.splice(r - 1, 1),
-    setFrozenRows: () => {}, setColumnWidth: () => {}, getMaxRows: () => 1000,
+    setFrozenRows: () => {}, setColumnWidth: () => {}, getMaxRows: () => Math.max(1000, data.length), insertRowsAfter: () => {},
     clear: () => { data.length = 0; },
   };
   return api;
@@ -209,12 +209,19 @@ console.log('\nclearReply and removeInvitation: ok');
 {
   const pjordan = slugOf('TEST000002');
   ctx.clearReply('TEST000002');
+  // Tick boxes fill the Severe column far below the data, like the real tab
+  for (let i = sheets.People.data.length; i < 40; i++) sheets.People.data[i] = ['', '', '', '', '', '', '', '', '', '', false];
   let r2 = post({ slug: pjordan, guests: [{ name: 'Jordan Testguest', attending: true, dietary: 'Other', dietaryOther: 'No pork', allergies: 'None' }, { name: 'Sam Plusone', attending: false }] });
   assert.equal(r2.ok, true);
   let rows = sheets.People.data.filter(x => x[0] === 'TEST000002');
   assert.equal(rows.length, 2);
   assert.equal(JSON.stringify(rows[0].slice(3, 7)), JSON.stringify(['Jordan Testguest', 'Yes', 'Other: No pork', '']));
   assert.equal(JSON.stringify(rows[1].slice(3, 7)), JSON.stringify(['Sam Plusone', 'No', '', '']));
+  { // rows sit directly under the last name even when tick boxes fill the column further down
+    const ppl = sheets.People.data, firstFree = ppl.findIndex((x, i) => i > 0 && !x[3]);
+    assert.ok(firstFree > 0 && ppl.slice(firstFree).every(x => !x[3]), 'no gaps between people');
+    assert.ok(ppl.length <= 40, 'not written below the tick boxes');
+  }
   rows[0][9] = 'Peanuts'; rows[0][10] = true; // a host fix
   ctx.clearReply('TEST000002');
   assert.equal(sheets.People.data.filter(x => x[0] === 'TEST000002').length, 0, 'reset removes People rows');
