@@ -213,11 +213,16 @@ function writePeople(invite, guests, when) {
   const inv = sheet('Invites');
   const h = headerIndex(inv.getRange(1, 1, 1, inv.getLastColumn()).getValues()[0]);
   const side = h['Side'] !== undefined ? String(inv.getRange(invite.row, h['Side'] + 1).getValues()[0][0]).trim() : '';
-  guests.forEach(g => {
-    const own = [invite.code, invite.response.slug, side, g.name, g.attending ? 'Yes' : 'No',
-      g.attending && g.dietary !== 'None' ? g.dietary : '', g.attending ? g.allergies : '', when];
-    s.appendRow(own.concat(keep[g.name.toLowerCase()] || ['', '', false]));
-  });
+  // Rows go straight under the last name, not via appendRow: the Severe tick boxes run to the bottom
+  // of the tab and would otherwise count as filled rows.
+  const rows = guests.map(g => [invite.code, invite.response.slug, side, g.name, g.attending ? 'Yes' : 'No',
+    g.attending && g.dietary !== 'None' ? g.dietary : '', g.attending ? g.allergies : '', when]
+    .concat(keep[g.name.toLowerCase()] || ['', '', false]));
+  const names = s.getRange(1, 4, s.getMaxRows(), 1).getValues();
+  let last = names.length;
+  while (last > 1 && !String(names[last - 1][0]).trim()) last--;
+  if (last + rows.length > s.getMaxRows()) s.insertRowsAfter(s.getMaxRows(), last + rows.length - s.getMaxRows() + 50);
+  s.getRange(last + 1, 1, rows.length, PEOPLE_HEADERS.length).setValues(rows);
 }
 
 function peopleSheet() {
